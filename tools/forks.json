@@ -170,13 +170,13 @@
     },
     "plugins/pstack/skills/poteto-mode/scripts/watch-pr/github.test.ts": {
       "kind": "policy",
-      "why": "Covers the port's GitHub reader: completed conclusions that gh buckets as pending, a checkout PR paired with a different explicit repository, a full open-PR page refused as a possibly cut stack, a stack that never takes a PR headed at the default branch as parent, child, or seed under the default branch the repository reports, while a fork branch of the same name still stacks, a check-rollup cursor that repeats or returns to an earlier page, a review-thread cursor that repeats, a review-thread page that promises more pages without a cursor, a binary that cannot be spawned, the base revision field, and a no-checks reading that needs both check reads to agree and fails closed otherwise.",
+      "why": "Covers the port's GitHub reader: completed conclusions that gh buckets as pending, a checkout PR paired with a different explicit repository, a full open-PR page refused as a possibly cut stack, a stack that never takes a PR headed at the default branch as parent, child, or seed under the default branch the repository reports, while a fork branch of the same name still stacks, a check-rollup cursor that repeats or returns to an earlier page, a review-thread cursor that repeats, a review-thread page that promises more pages without a cursor, a binary that cannot be spawned, the base revision field, and a no-checks reading that needs both check reads to agree and fails closed otherwise. Upstream's fork-head stack tests build open PRs with a head repository rather than isCrossRepository.",
       "since": "0.9.24",
       "upstream": "not-proposed"
     },
     "plugins/pstack/skills/poteto-mode/scripts/watch-pr/github.ts": {
       "kind": "policy",
-      "why": "Runs every gh and git call under the shared deadline, reports a binary that cannot be spawned as a non-retryable query failure, reads the base revision, pages through every review thread, refuses a review-thread or check-rollup cursor that does not advance and a review-thread page that promises more pages without a cursor, fails completed conclusions that gh buckets as pending, refuses a checkout PR paired with a different explicit repository, reads the repository's default branch, leaves every PR whose head is that branch in the PR's own repository out of stack ordering as parent, child, and seed, orders a stack only through branches in the PR's own repository, while rejecting duplicate head branches, cycles, and a full open-PR page, and reads a repository with no checks configured as its own result when gh reports none and the head commit has no rollup.",
+      "why": "Runs every gh and git call under the shared deadline, reports a binary that cannot be spawned as a non-retryable query failure, reads the base revision, pages through every review thread, refuses a review-thread or check-rollup cursor that does not advance and a review-thread page that promises more pages without a cursor, fails completed conclusions that gh buckets as pending, refuses a checkout PR paired with a different explicit repository, reads the repository's default branch, leaves every PR whose head is that branch in the PR's own repository out of stack ordering as parent, child, and seed, orders a stack only through branches in the PR's own repository, while rejecting duplicate head branches, cycles, and a full open-PR page, and reads a repository with no checks configured as its own result when gh reports none and the head commit has no rollup. It reads the head repository instead of upstream's isCrossRepository flag, which says only that a head is in some other repository.",
       "since": "0.9.24",
       "upstream": "not-proposed"
     },
@@ -206,7 +206,7 @@
     },
     "plugins/pstack/skills/poteto-mode/scripts/watch-pr/types.ts": {
       "kind": "policy",
-      "why": "Adds the review-required, behind-base, and merge-blocked gate reasons, the landing revision on open PR facts and in the ready proof, the head repository of an open PR, the default-branch reader method, deadline, spawn-failed, snapshot-changed, and invalid-stack query failures, the mergeability-unknown wait reason, and the no-checks reading (a none-reported fast path, a no-rollup page, the ci-none state, the ci-unreported first sighting, and the checks-unreported wait reason).",
+      "why": "Adds the review-required, behind-base, and merge-blocked gate reasons, the landing revision on open PR facts and in the ready proof, the head repository of an open PR in place of upstream's isCrossRepository flag, the default-branch reader method, deadline, spawn-failed, snapshot-changed, and invalid-stack query failures, the mergeability-unknown wait reason, and the no-checks reading (a none-reported fast path, a no-rollup page, the ci-none state, the ci-unreported first sighting, and the checks-unreported wait reason).",
       "since": "0.9.24",
       "upstream": "not-proposed"
     },
@@ -256,6 +256,24 @@
       "kind": "policy",
       "why": "Prefixes a cell opening with a double quote so a spreadsheet or TSV reader cannot parse it as a quoted field, appends each row through one perl syswrite so parallel writers cannot interleave rows longer than the shell's stdio buffer, reports a short or failed write, and falls back to upstream's printf when perl is missing or does not work.",
       "since": "0.9.41",
+      "upstream": "not-proposed"
+    },
+    "plugins/pstack/skills/statechart/scripts/lib.mjs": {
+      "kind": "policy",
+      "why": "Decodes the \\n, \\t, \\r, and \\f escapes in a TLC string value instead of dropping the backslash, so \"\\n\" and \"n\" keep distinct state keys and a safe state is never matched to another state's counterexample.",
+      "since": "0.9.103",
+      "upstream": "not-proposed"
+    },
+    "plugins/pstack/skills/statechart/scripts/statechart.mjs": {
+      "kind": "policy",
+      "why": "Splits a TLC config into words without breaking a quoted string, so the config each TLC run checks keeps a string constant's whitespace and any \\* or (* inside it.",
+      "since": "0.9.103",
+      "upstream": "not-proposed"
+    },
+    "plugins/pstack/skills/statechart/scripts/test/statechart.test.mjs": {
+      "kind": "policy",
+      "why": "Reads a text element's words by matching the text between tags instead of deleting tags with a regex, which CodeQL reports as incomplete HTML sanitization; both give the same words for the SVG the renderer writes.",
+      "since": "0.9.103",
       "upstream": "not-proposed"
     },
     "plugins/pstack/skills/tdd/SKILL.md": {

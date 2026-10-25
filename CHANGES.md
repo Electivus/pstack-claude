@@ -2,6 +2,16 @@
 
 This file is the release changelog, with one `## <version> - <title>` entry per release, newest first. The Cursor-to-Claude rewrite rules live in [`tools/substitutions.json`](tools/substitutions.json), and the [sync boundary](CONTRIBUTING.md#the-sync-boundary) in `CONTRIBUTING.md` defines how a change to upstream's skill content is declared.
 
+## 0.9.103 - statechart and ketchup-video skills
+
+Sync to upstream `99b609a` (v0.15.32). Two skills are new. `/statechart` draws how a system moves between states as a Mermaid chart from a TLA+ model, shows each bug as a numbered path to a state that breaks a rule, and turns an agreed chart into a TLA+ skeleton. Its first run installs TLC and Java with mise, about 305 MB. `/ketchup-video` catches the user up like `/ketchup`, but shows what happened as a short silent video of slides, with the waiting calls as text under it. `/create-formal-verification-skill` now tells the skill it generates to read each TLA+ result with `/statechart`.
+
+`/sharpen` returns to upstream's original prompt. It asks for a deeper version of the task, not a bigger one, and returns only the rewritten prompt. `/reflect` never edits a skill under `plugins/cache/`. It copies the skill to `.claude/skills/` or the user skills folder after approval and edits the copy. `check-plan` matches an inline code span only when its closing backticks repeat the opening run. `orch frontier set` takes the one open PR on a branch that also has closed or merged PRs, where it used to reject the branch for having several.
+
+Upstream's two `watch-pr` fixes were already in the port. Stack discovery already separated fork heads by their head repository, and the poll loop already capped each sleep at the shared deadline. The port keeps its code and runs upstream's new tests against it, rewritten for the port's `headRepository` field and `WatchDeadline`. Upstream renumbered the steps in `/swarm`, so the substitution rule that removes `environment: "cloud"` there now stops before the step number and a second rule starts after it.
+
+The port fixes two string bugs in upstream's `/statechart` scripts. `parseValue` decoded `"\n"` as `n`, so two different strings could give two states the same key and mark a safe state broken. It now decodes `\n`, `\t`, `\r`, and `\f`. The config split collapsed whitespace inside a quoted constant and cut it at a `\*`, so TLC checked a different constant than the config named. It now keeps each quoted string whole. `tests/statechart-strings.test.mjs` covers both, since CI does not run upstream's `node:test` suite. A test helper in that suite now reads text between tags instead of stripping tags, which CodeQL reported as incomplete sanitization.
+
 ## 0.9.102 - The skill link validator keeps angle-bracket destinations
 
 `tools/validate-skills.mjs` now reads a Markdown link destination written in angle brackets, such as `[text](<path with spaces.md>)`, as the path inside the brackets. It used to check the brackets as part of the path, so a link to an existing file was reported as broken. No skill content changed. `tests/agent-skills.test.mjs` covers the case.
