@@ -258,6 +258,24 @@
       "since": "0.9.41",
       "upstream": "not-proposed"
     },
+    "plugins/pstack/skills/statechart/scripts/lib.mjs": {
+      "kind": "policy",
+      "why": "Decodes the \\n, \\t, \\r, and \\f escapes in a TLC string value instead of dropping the backslash, so \"\\n\" and \"n\" keep distinct state keys and a safe state is never matched to another state's counterexample.",
+      "since": "0.9.103",
+      "upstream": "not-proposed"
+    },
+    "plugins/pstack/skills/statechart/scripts/statechart.mjs": {
+      "kind": "policy",
+      "why": "Splits a TLC config into words without breaking a quoted string, so the config each TLC run checks keeps a string constant's whitespace and any \\* or (* inside it.",
+      "since": "0.9.103",
+      "upstream": "not-proposed"
+    },
+    "plugins/pstack/skills/statechart/scripts/test/statechart.test.mjs": {
+      "kind": "policy",
+      "why": "Reads a text element's words by matching the text between tags instead of deleting tags with a regex, which CodeQL reports as incomplete HTML sanitization; both give the same words for the SVG the renderer writes.",
+      "since": "0.9.103",
+      "upstream": "not-proposed"
+    },
     "plugins/pstack/skills/tdd/SKILL.md": {
       "kind": "policy",
       "why": "Requires quoting the failure content, not the assertion line, as evidence that the new test fails for the intended reason.",

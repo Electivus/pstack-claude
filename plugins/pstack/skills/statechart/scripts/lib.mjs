@@ -3,6 +3,7 @@ import path from "node:path";
 
 const tuples = new WeakSet();
 export const isTuple = (v) => tuples.has(v);
+const STRING_ESCAPES = { n: "\n", t: "\t", r: "\r", f: "\f" };
 
 export function parseValue(text) {
   const src = text.trim();
@@ -78,8 +79,9 @@ export function parseValue(text) {
       i++;
       let s = "";
       while (i < src.length && src[i] !== '"') {
-        if (src[i] === "\\") i++;
-        s += src[i++];
+        if (src[i] === "\\") s += STRING_ESCAPES[src[++i]] ?? src[i];
+        else s += src[i];
+        i++;
       }
       i++;
       return s;

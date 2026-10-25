@@ -1758,7 +1758,7 @@ const xmlText = (s) =>
     .replace(/&amp;/g, "&");
 const textLines = (text) => {
   const spans = [...text.matchAll(/<tspan\b[^>]*>([^<]*)<\/tspan>/g)].map((m) => m[1]);
-  return (spans.length ? spans : [text.replace(/<[^>]+>/g, "")])
+  return (spans.length ? spans : [[...text.matchAll(/>([^<]*)</g)].map((m) => m[1]).join("")])
     .map(xmlText)
     .filter((l) => l.trim());
 };

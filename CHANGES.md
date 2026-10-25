@@ -10,6 +10,8 @@ Sync to upstream `99b609a` (v0.15.32). Two skills are new. `/statechart` draws h
 
 Upstream's two `watch-pr` fixes were already in the port. Stack discovery already separated fork heads by their head repository, and the poll loop already capped each sleep at the shared deadline. The port keeps its code and runs upstream's new tests against it, rewritten for the port's `headRepository` field and `WatchDeadline`. Upstream renumbered the steps in `/swarm`, so the substitution rule that removes `environment: "cloud"` there now stops before the step number and a second rule starts after it.
 
+The port fixes two string bugs in upstream's `/statechart` scripts. `parseValue` decoded `"\n"` as `n`, so two different strings could give two states the same key and mark a safe state broken. It now decodes `\n`, `\t`, `\r`, and `\f`. The config split collapsed whitespace inside a quoted constant and cut it at a `\*`, so TLC checked a different constant than the config named. It now keeps each quoted string whole. `tests/statechart-strings.test.mjs` covers both, since CI does not run upstream's `node:test` suite. A test helper in that suite now reads text between tags instead of stripping tags, which CodeQL reported as incomplete sanitization.
+
 ## 0.9.102 - The skill link validator keeps angle-bracket destinations
 
 `tools/validate-skills.mjs` now reads a Markdown link destination written in angle brackets, such as `[text](<path with spaces.md>)`, as the path inside the brackets. It used to check the brackets as part of the path, so a link to an existing file was reported as broken. No skill content changed. `tests/agent-skills.test.mjs` covers the case.

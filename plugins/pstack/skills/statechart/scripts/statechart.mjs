@@ -124,11 +124,10 @@ const KEYWORD =
   /^(SPECIFICATION|INIT|NEXT|CONSTANTS?|INVARIANTS?|PROPERTY|PROPERTIES|SYMMETRY|VIEW|CONSTRAINTS?|ACTION_CONSTRAINTS?|CHECK_DEADLOCK|POSTCONDITION|ALIAS)$/;
 
 function splitRules(cfg) {
-  const words = cfg
-    .replace(/\(\*[^]*?\*\)/g, " ")
-    .replace(/\\\*.*/g, " ")
-    .split(/\s+/)
-    .filter(Boolean);
+  const words =
+    cfg
+      .replace(/("(?:[^"\\]|\\.)*")|\(\*[^]*?\*\)|\\\*.*/g, (comment, string) => string ?? " ")
+      .match(/(?:"(?:[^"\\]|\\.)*"|[^\s])+/g) ?? [];
   const kept = [];
   const rules = [];
   const properties = [];
