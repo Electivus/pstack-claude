@@ -2,6 +2,12 @@
 
 This file is the release changelog, with one `## <version> - <title>` entry per release, newest first. The Cursor-to-Claude rewrite rules live in [`tools/substitutions.json`](tools/substitutions.json), and the [sync boundary](CONTRIBUTING.md#the-sync-boundary) in `CONTRIBUTING.md` defines how a change to upstream's skill content is declared.
 
+## 0.9.104 - pi ask tool: off leaves ask_user_question to another extension
+
+The Pi extension registered `ask_user_question` unconditionally. Pi refuses to start when two extensions register the same tool name, so an install beside another extension that provides `ask_user_question`, such as a dedicated ask-user-question package, exited 1 with `Tool "ask_user_question" conflicts with <path>` before any session began. A `pi ask tool: off` line in the Pi override sheet now makes the extension skip that registration and leave the name to the other extension; without the line it registers the tool as before. The line follows the `session hook: off` grammar, so only that exact line counts. The sheet rides in the system prompt, so the model sees that another extension owns the tool, and `/setup-pstack` on Pi adds the line when the user runs such an extension. @toomanyopenfiles found and fixed this in [#318](https://github.com/michael-denyer/pstack-claude/pull/318).
+
+`tests/pi/config.test.mjs` pins the line's grammar, and `tests/pi/interaction.test.mjs` proves that an install whose sheet has the line registers the other tools and nothing named `ask_user_question`. `docs/reference.md` and the T13 row of `docs/pi-equivalence.md` document the line, and `pi-tools.md` covers it in the `AskUserQuestion` row and the `setup-pstack` note.
+
 ## 0.9.103 - sync to upstream e73df47 (v0.15.32): adds /statechart and /ketchup-video
 
 The upstream pin moves from `7b353f7` to `e73df47`, upstream v0.15.32, 18 pstack commits. `/statechart` draws how a system moves between states as a Mermaid statechart generated from a TLA+ model, with each bug TLC finds as a numbered path, and also turns an agreed chart into a TLA+ skeleton. Its first run installs TLC and Java with mise, about 305 MB. `/ketchup-video` gives the `/ketchup` catch-up as a short silent video of slides, with the waiting calls as text under it. `/create-formal-verification-skill` now tells the skill it generates to read each TLA+ result with `/statechart`, and `/poteto-help` routes to both new skills. The package now carries 43 public skills and 24 principles.
