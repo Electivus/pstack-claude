@@ -11,6 +11,8 @@ On GitHub Copilot, read the [platform mapping](../poteto-mode/references/copilot
 
 On Muse, read the [platform mapping](../poteto-mode/references/muse-tools.md), including its per-skill notes, before following this skill.
 
+On Claude Code, when the `pstack-models.md` override sheet has the line `codex seat: on`, read [the Codex seat](../poteto-mode/references/codex-seat.md) before you spawn a runner, judge, or reviewer.
+
 Open a todolist with one entry per phase (Frame, Fan out, Cross-judge, Pick, Graft, Verify) before launching anything.
 
 ## Phase A: Frame

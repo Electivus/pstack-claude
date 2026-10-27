@@ -177,6 +177,8 @@ Invoke [setup-pstack](../plugins/pstack/skills/setup-pstack/SKILL.md) to choose 
 
 For design comparisons and reviews, choose distinct models available to your runtime. The default panel uses different Claude models.
 
+On Claude Code, the sheet line `codex seat: on` adds one Codex seat to every panel: the `arena` runners and cross-judge, the `architect` runners, and the `interrogate` reviewers. The seat runs through the `codex@openai-codex` plugin's companion script, read-only for judges and reviewers, and the Claude seats carry on when it fails. The [Codex seat reference](../plugins/pstack/skills/poteto-mode/references/codex-seat.md) gives the procedure. With it, a `codex` entry in the `arena cross-judge pool` line makes Codex the only cross-judge. Without the line, the panels run only their Claude seats.
+
 Install dependencies for the workflows you use:
 
 | Dependency | When you need it |
@@ -184,6 +186,7 @@ Install dependencies for the workflows you use:
 | GitHub CLI, `gh` | PR monitoring, shipping, and the `orch` stack frontier. Authenticate with `gh auth login`. The playbooks use Origin's CLI, `origin`, instead when it can resolve the repository. |
 | Bun | The bundled `watch-pr` and `orch` scripts. Their bootstrap installs script dependencies on first run. |
 | `plugin-dev` | Claude Code skill-authoring guidance used by `automate-me`, `reflect`, and `poteto-mode`. |
+| `codex@openai-codex` | The opt-in Codex seat on Claude Code panels. Run `/codex:setup` after you install it. |
 
 Install the Claude Code skill-authoring companion with:
 

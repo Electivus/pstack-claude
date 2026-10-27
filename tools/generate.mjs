@@ -27,6 +27,8 @@
 //   the Per-skill notes table in poteto-mode/references/copilot-tools.md
 //     -> the GitHub Copilot preamble under the same heading, after any Codex one
 //   DRIVER_PLAYBOOKS -> the driver-skill line under each playbook's first heading
+//   CODEX_SEAT_SKILLS -> the Codex seat line under each panel skill's first heading,
+//     after its runtime preambles
 //   plugins/pstack/models.json's roles, again
 //     -> the role list in setup-pstack's scripts/sheet.awk, which checks a Copilot sheet
 //     -> the list of skills that dispatch on role models in hooks/session-start-copilot.md
@@ -472,7 +474,13 @@ export function regions(models) {
 const PREAMBLE_RUNTIMES = RUNTIMES.filter((runtime) => runtime.preamble);
 const DRIVER_LINE = "Resolve the driver skill through [poteto-mode's Non-negotiables](../SKILL.md#non-negotiables).";
 const DRIVER_PLAYBOOKS = ["autopilot-full", "multi-phase-plan", "orchestrate", "refactoring", "shipping"];
-const LEAD_LINES = [...PREAMBLE_RUNTIMES.map((runtime) => runtime.preamble), DRIVER_LINE];
+// The opt-in Codex seat: each skill whose panel takes one points at the shared
+// procedure before it spawns anything, so a sheet without the line costs one line.
+export const CODEX_SEAT_SKILLS = ["arena", "architect", "interrogate"];
+export const CODEX_SEAT_LINE =
+  "On Claude Code, when the `pstack-models.md` override sheet has the line `codex seat: on`, " +
+  "read [the Codex seat](../poteto-mode/references/codex-seat.md) before you spawn a runner, judge, or reviewer.";
+const LEAD_LINES = [...PREAMBLE_RUNTIMES.map((runtime) => runtime.preamble), DRIVER_LINE, CODEX_SEAT_LINE];
 
 // The skills with a row in a runtime mapping's Per-skill notes table, in row order.
 export function noteSkills(runtime, markdown) {
@@ -488,9 +496,9 @@ export function noteSkills(runtime, markdown) {
 
 // The lines the generator owns under a file's first heading, in order, by
 // repo-relative file: a runtime's preamble on each skill its Per-skill notes
-// table has a row for, in RUNTIMES order, and the driver-skill line on the
-// playbooks that drive an app. Every runtime's table must name real skills,
-// whether or not it stamps a preamble.
+// table has a row for, in RUNTIMES order, then the Codex seat line on the
+// panel skills, and the driver-skill line on the playbooks that drive an app.
+// Every runtime's table must name real skills, whether or not it stamps a preamble.
 export function loadLeadLines(root = repo) {
   const leads = new Map();
   for (const runtime of RUNTIMES) {
@@ -499,6 +507,10 @@ export function loadLeadLines(root = repo) {
       if (!existsSync(join(root, file))) throw new Error(`${runtime.tools}: per-skill note for "${skill}", which has no SKILL.md`);
       if (runtime.preamble) leads.set(file, [...(leads.get(file) ?? []), runtime.preamble]);
     }
+  }
+  for (const skill of CODEX_SEAT_SKILLS) {
+    const file = `${SKILLS}/${skill}/SKILL.md`;
+    leads.set(file, [...(leads.get(file) ?? []), CODEX_SEAT_LINE]);
   }
   for (const playbook of DRIVER_PLAYBOOKS) leads.set(`${SKILLS}/poteto-mode/playbooks/${playbook}.md`, [DRIVER_LINE]);
   return leads;
@@ -749,9 +761,12 @@ export function overrideSheetBlock(models) {
     "the role's subagent then runs at that level, each entry of a panel list on its own. " +
     "`default effort` sets the level for a value without one; `session` keeps the parent session's effort. " +
     "`session hook: off` stops the Claude Code, Codex, or Muse SessionStart hook, or the pstack Pi extension, from injecting the poteto-mode mandate; " +
-    "any other value, or no line, leaves it on.\n\n" +
+    "any other value, or no line, leaves it on. " +
+    "`codex seat: on` adds one Codex seat, run by the `codex@openai-codex` plugin, to each Claude Code panel; " +
+    "any other value, or no line, leaves each panel to its Claude seats. " +
+    "With it, a `codex` entry in `arena cross-judge pool` makes the Codex judge the only cross-judge.\n\n" +
     rows +
-    `\n\ndefault effort: ${models.defaultEffort}\nsession hook: on`
+    `\n\ndefault effort: ${models.defaultEffort}\nsession hook: on\ncodex seat: off`
   );
 }
 
@@ -1038,7 +1053,7 @@ export function problems(root, models) {
     if (strays.length) {
       throw new Error(
         "generator-owned lead lines outside their files (a runtime preamble needs a row in the Per-skill notes " +
-          `table of ${PREAMBLE_RUNTIMES.map((r) => r.tools).join(" or ")}; the driver-skill line belongs to DRIVER_PLAYBOOKS):\n` +
+          `table of ${PREAMBLE_RUNTIMES.map((r) => r.tools).join(" or ")}; the driver-skill line belongs to DRIVER_PLAYBOOKS and the Codex seat line to CODEX_SEAT_SKILLS):\n` +
           strays.join("\n"),
       );
     }
