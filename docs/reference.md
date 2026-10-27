@@ -42,7 +42,7 @@ Find each skill's instructions in the [skills tree](../plugins/pstack/skills/).
 | `/maintain-verification-skill` | re-sync a drifted verification skill and its feature map |
 | `/create-formal-verification-skill` | generate a project-local skill that formally verifies one high-risk property |
 | `/maintain-formal-verification-skill` | re-sync a formal verification after the code it covers changed |
-| `/statechart` | show a behavior as a Mermaid statechart generated from a TLA+ model, with each bug TLC finds as a numbered path, or turn an agreed chart into a TLA+ skeleton |
+| `/statechart` | check a TLA+ model and draw it as a Mermaid statechart, with the shortest path to each state that breaks a rule |
 | `/deslop` | deslop a diff before commit |
 | `/babysit` | monitor an open PR, fix CI/comments, keep it merge-ready |
 | `/thermo-nuclear-review` | audit a branch's changes for bugs, breakage, security issues, devex regressions, and feature-gate leaks |
@@ -241,7 +241,7 @@ CI also checks shell scripts, workflows, Markdown, relative links, and the bundl
 
 ### Port scope and attribution
 
-The skill tree is synced against upstream `e73df47` (v0.15.32). The thermos skills and agents are synced against `118e73b` (thermos 1.0.0).
+The skill tree is synced against upstream `ab1f702` (v0.15.35). The thermos skills and agents are synced against `118e73b` (thermos 1.0.0).
 
 This repository ports Lauren Tan's pstack from Cursor to Claude Code and shares the skills with other runtimes. It includes six cursor-team-kit skills, the three thermos skills with their two review subagents, and an independently authored `babysit` skill. The port supplies Claude Code plugin registration and routing, Codex manifests and shortcuts, the Codex tool mapping, the Pi package, extension, and tool mapping, the GitHub Copilot hooks and tool mapping, and the Muse native plugin, routing hook, and tool mapping.
 
