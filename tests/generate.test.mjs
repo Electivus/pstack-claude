@@ -24,6 +24,8 @@ import {
   applyRegions,
   assertChangesHeading,
   changes,
+  CODEX_SEAT_LINE,
+  CODEX_SEAT_SKILLS,
   deriveSkill,
   loadLeadLines,
   noteSkills,
@@ -35,6 +37,7 @@ import {
   stampLeadLine,
   fenceUnder,
   loadModels,
+  overrideSheetBlock,
   parseFrontmatter,
   promptStub,
   publicSkills,
@@ -560,6 +563,31 @@ describe("effort section", () => {
     expect(text).toContain("`effort` on the Claude Code `Agent` call");
     expect(text).toContain("`reasoning_effort`");
     expect(text).not.toContain("effort-<level>");
+  });
+});
+
+describe("Codex seat", () => {
+  const seatFiles = CODEX_SEAT_SKILLS.map((skill) => `plugins/pstack/skills/${skill}/SKILL.md`);
+
+  test("each panel skill points at the shared procedure after its runtime preambles", () => {
+    for (const file of seatFiles) {
+      expect(leads.get(file).at(-1)).toBe(CODEX_SEAT_LINE);
+      expect(readFileSync(join(repoRoot, file), "utf8")).toContain(`${RUNTIMES.at(-1).preamble}\n\n${CODEX_SEAT_LINE}\n`);
+    }
+    expect([...leads].filter(([, lines]) => lines.includes(CODEX_SEAT_LINE)).map(([file]) => file).sort()).toEqual(seatFiles.toSorted());
+  });
+
+  test("the procedure names every role of the panel skills, so a new role fails until it says where the seat goes", () => {
+    const reference = readFileSync(join(repoRoot, "plugins/pstack/skills/poteto-mode/references/codex-seat.md"), "utf8");
+    const roles = models.roles.filter((r) => CODEX_SEAT_SKILLS.includes(r.skill)).map((r) => r.role);
+    expect(roles.length).toBeGreaterThan(0);
+    for (const role of roles) expect({ role, named: reference.includes(`\`${role}\``) }).toEqual({ role, named: true });
+  });
+
+  test("the override sheet documents the opt-in and writes it off", () => {
+    const sheet = overrideSheetBlock(models);
+    expect(sheet).toContain("`codex seat: on` adds one Codex seat");
+    expect(sheet.split("\n").filter((l) => l.startsWith("codex seat:"))).toEqual(["codex seat: off"]);
   });
 });
 

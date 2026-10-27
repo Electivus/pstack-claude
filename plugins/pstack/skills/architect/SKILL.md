@@ -11,6 +11,8 @@ On GitHub Copilot, read the [platform mapping](../poteto-mode/references/copilot
 
 On Muse, read the [platform mapping](../poteto-mode/references/muse-tools.md), including its per-skill notes, before following this skill.
 
+On Claude Code, when the `pstack-models.md` override sheet has the line `codex seat: on`, read [the Codex seat](../poteto-mode/references/codex-seat.md) before you spawn a runner, judge, or reviewer.
+
 Sketch types, function signatures, class shapes, and module boundaries with `not implemented` bodies and pseudocode. Synthesize across multiple model perspectives, then fill in code against the chosen sketch.
 
 ## Start
