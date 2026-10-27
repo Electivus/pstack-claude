@@ -1,5 +1,11 @@
 {
   "pstack": {
+    "plugins/pstack/agents/comment-sicko.md": {
+      "kind": "policy",
+      "why": "Sends a comment that states a dependency, platform, vendor, or protocol rule to that system's documentation or source code, makes each kill of one cite the page or file and list it in the report, and marks the comment HOLD when that hunt cannot settle the rule, where the keep list alone would delete it on doubt.",
+      "since": "0.9.106",
+      "upstream": "not-proposed"
+    },
     "plugins/pstack/skills/architect/SKILL.md": {
       "kind": "policy",
       "why": "Requires comparing accepted deviations with the saved sketch and rationale, and updating them, before each implementation unit closes.",
@@ -28,6 +34,12 @@
       "kind": "port-feature",
       "why": "Names the generated project skill verify so it replaces Claude Code's bundled user-only /verify and the playbooks can invoke it.",
       "since": "0.9.29",
+      "upstream": "not-proposed"
+    },
+    "plugins/pstack/skills/no-comments/SKILL.md": {
+      "kind": "policy",
+      "why": "Treats a HOLD that names its dependency, platform, vendor, or protocol rule and where to check it as settled for the run, restores as a HOLD any kill of such a comment without a refuting page or file, and limits a second rejected report's failure to that report's findings so the accepted work still lands.",
+      "since": "0.9.106",
       "upstream": "not-proposed"
     },
     "plugins/pstack/skills/poteto-help/SKILL.md": {
