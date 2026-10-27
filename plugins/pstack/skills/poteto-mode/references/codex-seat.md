@@ -2,7 +2,7 @@
 
 On Claude Code, the line `codex seat: on` in the `pstack-models.md` override sheet adds one Codex seat to every pstack panel. The `codex@openai-codex` plugin runs it. The seat joins no role line: each role line lists only the Claude seats, and the Codex seat comes on top of them.
 
-- **arena** gets one more runner beside the `arena runners`, and a second cross-judge beside the one Phase C picks from the `arena cross-judge pool`.
+- **arena** gets one more runner beside the `arena runners`, and a second cross-judge beside the one Phase C picks from the `arena cross-judge pool`. When that pool names `codex`, the Codex judge is the only cross-judge, and Phase C spawns no Claude judge. Without `codex seat: on`, drop a `codex` entry from the pool.
 - **architect** runs the arena with its `architect runners` line in place of `arena runners`, so that arena still gets one Codex runner, not two.
 - **interrogate** gets one more reviewer beside the `interrogate reviewers`.
 
@@ -29,8 +29,8 @@ Do not use the `codex:codex-rescue` subagent for a seat. It rewrites the prompt,
 | Interrogate reviewer | the repository root | no |
 
 - **Runner.** It is one more Phase B candidate, labelled `codex`.
-- **Cross-judge.** Give both judges the same rubric and candidates, and launch them in parallel. In Phase D, compare both verdicts with your own pick.
-- **Reviewer.** Label it after the Claude reviewers, so Reviewer E follows Reviewers A to D, and list its model as Codex in the Reviewers output.
+- **Cross-judge.** Give both judges the same rubric and candidates, and launch them in parallel. In Phase D, compare both verdicts with your own pick. When the pool names `codex`, the Codex judge runs alone. If it drops out, spawn one Claude judge from the pool's other entries, or from the runner defaults when the pool has none, so Phase D still gets a second opinion.
+- **Reviewer.** Label it with the letter after the last Claude reviewer: Reviewer E after the default Reviewers A to D, or Reviewer B after one Claude reviewer. List its model as Codex in the Reviewers output.
 
 ## Failures
 

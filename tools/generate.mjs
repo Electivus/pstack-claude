@@ -763,7 +763,8 @@ export function overrideSheetBlock(models) {
     "`session hook: off` stops the Claude Code, Codex, or Muse SessionStart hook, or the pstack Pi extension, from injecting the poteto-mode mandate; " +
     "any other value, or no line, leaves it on. " +
     "`codex seat: on` adds one Codex seat, run by the `codex@openai-codex` plugin, to each Claude Code panel; " +
-    "any other value, or no line, leaves each panel to its Claude seats.\n\n" +
+    "any other value, or no line, leaves each panel to its Claude seats. " +
+    "With it, a `codex` entry in `arena cross-judge pool` makes the Codex judge the only cross-judge.\n\n" +
     rows +
     `\n\ndefault effort: ${models.defaultEffort}\nsession hook: on\ncodex seat: off`
   );

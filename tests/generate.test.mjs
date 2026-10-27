@@ -589,6 +589,13 @@ describe("Codex seat", () => {
     expect(sheet).toContain("`codex seat: on` adds one Codex seat");
     expect(sheet.split("\n").filter((l) => l.startsWith("codex seat:"))).toEqual(["codex seat: off"]);
   });
+
+  test("a codex cross-judge entry means the same thing to the sheet, setup-pstack, and the procedure", () => {
+    const read = (file) => readFileSync(join(repoRoot, file), "utf8");
+    expect(overrideSheetBlock(models)).toContain("a `codex` entry in `arena cross-judge pool` makes the Codex judge the only cross-judge");
+    expect(read("plugins/pstack/skills/setup-pstack/SKILL.md")).toContain("`codex` passes only in the `arena cross-judge pool` line, and only with `codex seat: on`");
+    expect(read("plugins/pstack/skills/poteto-mode/references/codex-seat.md")).toContain("When that pool names `codex`, the Codex judge is the only cross-judge");
+  });
 });
 
 describe("plan, changes, apply", () => {
