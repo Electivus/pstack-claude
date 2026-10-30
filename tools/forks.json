@@ -74,7 +74,7 @@
     },
     "plugins/pstack/skills/poteto-mode/playbooks/multi-phase-plan.md": {
       "kind": "port-feature",
-      "why": "Plans read skills from the installed plugin, keep the store under ~/.claude/orchestrate, write the program objective into standing orders, run the tick as a dynamic-mode /loop that re-reads that objective, run live lanes in worktrees through the driver skill the Non-negotiables resolve instead of on cloud VMs with control-ui or control-cli, name the configured swarm workers model instead of a placeholder, and leave rebase and merge authority to the execution playbook.",
+      "why": "Plans read skills from the installed plugin, keep the store under ~/.claude/orchestrate, write the program objective into standing orders, run the tick as a dynamic-mode /loop that re-reads that objective, run live lanes in worktrees through the driver skill the Non-negotiables resolve instead of on cloud VMs with control-ui or control-cli, name the configured swarm workers model instead of a placeholder, take the explore step's subagent type from the Subagents section so a named explorer starts as a Claude Code teammate without pstack:poteto-agent, and leave rebase and merge authority to the execution playbook.",
       "since": "0.9.19",
       "upstream": "not-proposed"
     },
