@@ -1,6 +1,6 @@
 ---
 name: sharpen
-description: rewrite a prompt deeper, not bigger, the way a top professional would approach it, without doing the task
+description: make a task deeper, not bigger, by naming what a top expert would do and what would show the result is right, then rewrite the prompt to ask for that
 disable-model-invocation: true
 ---
 

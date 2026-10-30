@@ -1127,7 +1127,6 @@ describe("polling deadline sleeps", () => {
     const passed = fakeReader({ fastPath: { kind: "checks", checks: [passingCheck()] } });
     const result = await runSimple({
       dependencies: {
-        deadline: new WatchDeadline(0, () => now),
         reader: {
           ...pending,
           async checksFastPath(pr) {
@@ -1135,6 +1134,7 @@ describe("polling deadline sleeps", () => {
             return reads === 1 ? pending.checksFastPath(pr) : passed.checksFastPath(pr);
           },
         },
+        deadline: new WatchDeadline(0, () => now),
         clock: {
           now: () => now,
           observedAt: () => "2026-07-26T00:00:00.000Z",
@@ -1148,5 +1148,4 @@ describe("polling deadline sleeps", () => {
     expect(result.kind).toBe("READY");
     expect(sleeps).toEqual([60]);
   });
-
 });
