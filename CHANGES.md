@@ -2,6 +2,10 @@
 
 This file is the release changelog, with one `## <version> - <title>` entry per release, newest first. The Cursor-to-Claude rewrite rules live in [`tools/substitutions.json`](tools/substitutions.json), and the [sync boundary](CONTRIBUTING.md#the-sync-boundary) in `CONTRIBUTING.md` defines how a change to upstream's skill content is declared.
 
+## 0.9.113 - Resolve Codex session effort from active-turn metadata
+
+Codex's `session` effort now uses a helper to read the current thread's active-turn effort before applying task adjustments and passing `reasoning_effort` explicitly. It rejects completed turns, other threads, and missing or ambiguous metadata. On hosts without that runtime log, the mapping requires an explicit effort choice before dispatching; omitting the field can use the selected model's default. Setup and generated descriptions state this requirement. [#331](https://github.com/michael-denyer/pstack-claude/issues/331) remains open for validation across Codex hosts.
+
 ## 0.9.112 - The Muse SessionStart hook runs on Windows without sh
 
 The Muse plugin now declares two SessionStart hooks, so Muse on Windows gets the mandate and the sheet's usable role lines when the harness PATH has no `sh`. `session-start` runs the shared shell script, and `session-start-windows` runs `hooks/session-start.ps1 muse`. Muse's native hook schema takes one command per hook and rejects a per-OS variant such as `commandWindows`, so each hook stands down on the OS the other owns. On a machine without one of the two programs, that hook records a failed spawn at session start and the other delivers the context. @LuckyProtein found and fixed this in [#332](https://github.com/michael-denyer/pstack-claude/pull/332).
