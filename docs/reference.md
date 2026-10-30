@@ -177,7 +177,7 @@ Invoke [setup-pstack](../plugins/pstack/skills/setup-pstack/SKILL.md) to choose 
 
 For design comparisons and reviews, choose distinct models available to your runtime. The default panel uses different Claude models.
 
-On Claude Code, the sheet line `codex seat: on` adds one Codex seat to every panel: the `arena` runners and cross-judge, the `architect` runners, and the `interrogate` reviewers. The seat runs through the `codex@openai-codex` plugin's companion script, read-only for judges and reviewers, and the Claude seats carry on when it fails. The [Codex seat reference](../plugins/pstack/skills/poteto-mode/references/codex-seat.md) gives the procedure. With it, a `codex` entry in the `arena cross-judge pool` line makes Codex the only cross-judge. Without the line, the panels run only their Claude seats.
+On Claude Code, the sheet line `codex seat: on` adds one Codex seat to every panel: the `arena` runners and cross-judge, the `architect` runners, and the `interrogate` adversaries. The seat runs through the `codex@openai-codex` plugin's companion script, read-only for the judge, and the Claude seats carry on when it fails. The [Codex seat reference](../plugins/pstack/skills/poteto-mode/references/codex-seat.md) gives the procedure. With it, a `codex` entry in the `arena cross-judge pool` line makes Codex the only cross-judge. Without the line, the panels run only their Claude seats.
 
 Install dependencies for the workflows you use:
 
