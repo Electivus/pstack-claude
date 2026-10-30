@@ -1,6 +1,6 @@
 ---
 name: ketchup-video
-description: catch up like `/ketchup`, with a short silent video of slides for what happened and the waiting calls as text
+description: get the `/ketchup` catch-up as a short silent video of slides, with the calls waiting on you as text under it
 disable-model-invocation: true
 ---
 
