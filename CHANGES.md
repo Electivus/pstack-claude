@@ -2,15 +2,21 @@
 
 This file is the release changelog, with one `## <version> - <title>` entry per release, newest first. The Cursor-to-Claude rewrite rules live in [`tools/substitutions.json`](tools/substitutions.json), and the [sync boundary](CONTRIBUTING.md#the-sync-boundary) in `CONTRIBUTING.md` defines how a change to upstream's skill content is declared.
 
-## 0.9.113 - Merge michael-denyer/pstack-claude 0.9.112 and keep the fork's Codex seat and teammates
+## 0.9.114 - Merge michael-denyer/pstack-claude 0.9.113 and keep the fork's Codex seat and teammates
 
-The Electivus fork now merges `michael-denyer/pstack-claude` at 0.9.112, so it carries that repository's releases 0.9.103 to 0.9.112 below. The fork's own sync to upstream pstack v0.15.32, released here as 0.9.103 in [Electivus#1](https://github.com/Electivus/pstack-claude/pull/1), is gone. The parent repository synced the same upstream release and then v0.15.35, and its syncs replace the fork's. The fork's `/statechart` `.mjs` scripts and their two string fixes go with it, because upstream replaced those scripts with a TypeScript compiler. `tests/statechart-strings.test.mjs` tested only those scripts, so it is gone too.
+The Electivus fork now merges `michael-denyer/pstack-claude` at 0.9.113, so it carries that repository's releases 0.9.103 to 0.9.113 below. The fork first merged it at 0.9.112 and released that merge as 0.9.113 in [Electivus#5](https://github.com/Electivus/pstack-claude/pull/5). The parent repository then used 0.9.113 for a different release, so this entry replaces the fork's 0.9.113 entry. Electivus#5 landed as a squash, which kept its files and dropped the link to the parent repository's commits. This release merges the head of Electivus#5 again with no file changes, so the next merge from the parent repository starts from 0.9.113.
+
+The fork's own sync to upstream pstack v0.15.32, released here as 0.9.103 in [Electivus#1](https://github.com/Electivus/pstack-claude/pull/1), is gone. The parent repository synced the same upstream release and then v0.15.35, and its syncs replace the fork's. The fork's `/statechart` `.mjs` scripts and their two string fixes go with it, because upstream replaced those scripts with a TypeScript compiler. `tests/statechart-strings.test.mjs` tested only those scripts, so it is gone too.
 
 The fork keeps two changes. Each shipped here under a version number that the parent repository later used for a different release.
 
 **Codex seat.** Released here as 0.9.104 in [Electivus#2](https://github.com/Electivus/pstack-claude/pull/2). The override sheet line `codex seat: on` adds one Codex seat, on top of the Claude seats, to the `arena` runners and cross-judge, the `architect` runners, and the `interrogate` adversaries. The seat runs through the `codex@openai-codex` plugin's companion script. `poteto-mode/references/codex-seat.md` holds the procedure, and the generator stamps a pointer to it under the first heading of the three skills. Upstream's new `/interrogate` sends adversaries that write repro scripts in their own worktrees, in place of read-only reviewers. So the Codex adversary now runs with write access in its own worktree, gets interrogate's adversary brief, and records a dropout in the Dropped list. When the Codex cross-judge drops out, arena runs its own Phase C without the `codex` entry, which now picks a judge only from a family other than the parent's.
 
 **Teammates without the `pstack:poteto-agent` type.** Released here as 0.9.105 in [Electivus#4](https://github.com/Electivus/pstack-claude/pull/4). A split-pane teammate runs its agent definition's body in place of Claude Code's system prompt, so a teammate spawned as `pstack:poteto-agent` lost the harness, memory, environment, and context-management sections. poteto-mode's Subagents section spawns a named teammate with no `subagent_type` and opens its prompt with the poteto-agent instruction. An unnamed subagent keeps `pstack:poteto-agent`. The multi-phase-plan explore step takes its subagent type from that section.
+
+## 0.9.113 - Resolve Codex session effort from active-turn metadata
+
+Codex's `session` effort now uses a helper to read the current thread's active-turn effort before applying task adjustments and passing `reasoning_effort` explicitly. It rejects completed turns, other threads, and missing or ambiguous metadata. On hosts without that runtime log, the mapping requires an explicit effort choice before dispatching; omitting the field can use the selected model's default. Setup and generated descriptions state this requirement. [#331](https://github.com/michael-denyer/pstack-claude/issues/331) remains open for validation across Codex hosts.
 
 ## 0.9.112 - The Muse SessionStart hook runs on Windows without sh
 
