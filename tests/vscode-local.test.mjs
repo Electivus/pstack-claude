@@ -1,7 +1,3 @@
-// VS Code Local agent build contracts: the mapping names every Claude-specific
-// term the skills use, the plugin directory keeps VS Code reading pstack as a
-// Claude Code plugin with its routing rule attached to every request, and the
-// model section names no Claude alias.
 import { describe, expect, test } from "bun:test";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -11,6 +7,7 @@ import { loadModels } from "../tools/generate.mjs";
 import { PLUGIN } from "../tools/plugin.mjs";
 import {
   roleSkills,
+  routingCriteria,
   RUNTIMES,
   validateVSCodeLocalPackage,
   VSCODE_MANIFESTS,
@@ -32,20 +29,19 @@ const MANDATE = `${PLUGIN}/hooks/session-start-context.md`;
 const rule = readTree(RULE);
 const mapping = readTree(vscode.tools);
 
-// The shipped tree, with `files` replacing a file's text (null removes it) and
-// `extra` adding paths that exist.
-function check({ files = {}, extra = [], manifest: replaced = manifest } = {}) {
+function check({ files = {}, extra = [], removed = [], manifest: replaced = manifest } = {}) {
   return validateVSCodeLocalPackage({
     manifest: replaced,
     read: (rel) => files[rel] ?? readTree(rel),
-    pathExists: (rel) => (rel in files ? files[rel] !== null : extra.includes(rel) || inTree(rel)),
+    pathExists: (rel) => !removed.includes(rel) && (rel in files || extra.includes(rel) || inTree(rel)),
   });
 }
 
 const FRONT_MATTER = /^---\n[\s\S]*?\n---\n/;
-const isCriterion = (line) => /^- it |^It routes to the right pstack skill/.test(line);
-const criteria = (text) => text.split("\n").filter(isCriterion);
-const withoutCriteria = (text) => text.split("\n").filter((line) => !isCriterion(line)).join("\n");
+const withoutCriteria = (text) => {
+  const criteria = new Set(routingCriteria(text));
+  return text.split("\n").filter((line) => !criteria.has(line)).join("\n");
+};
 const withFrontMatter = (front) => rule.replace(FRONT_MATTER, `---\n${front}\n---\n`);
 
 mappingCoverage(vscode, [
@@ -95,7 +91,7 @@ describe("VS Code Local agent packaging", () => {
   });
 
   test("a missing routing rule fails, since Local sessions would get no routing", () => {
-    expect(() => check({ files: { [RULE]: null } })).toThrow(`${RULE} is missing, so VS Code Local sessions get no routing`);
+    expect(() => check({ removed: [RULE] })).toThrow(`${RULE} is missing, so VS Code Local sessions get no routing`);
   });
 
   test("a rules/pstack-routing.instructions.md beside the rule fails, since Copilot sessions in VS Code would load it", () => {
@@ -121,7 +117,7 @@ describe("VS Code Local agent packaging", () => {
   });
 
   test("a changed routing criterion fails, and so does a rule with none", () => {
-    const [first] = criteria(rule);
+    const [first] = routingCriteria(rule);
     expect(() => check({ files: { [RULE]: rule.replace(first, `${first} today`) } })).toThrow(
       `${RULE}: routing criteria differ from ${MANDATE}`,
     );
@@ -148,8 +144,8 @@ describe("the routing rule", () => {
   });
 
   test("states the routing criteria that Claude Code's mandate states", () => {
-    expect(criteria(readTree(MANDATE))).toHaveLength(4);
-    expect(criteria(rule)).toEqual(criteria(readTree(MANDATE)));
+    expect(routingCriteria(readTree(MANDATE))).toHaveLength(4);
+    expect(routingCriteria(rule)).toEqual(routingCriteria(readTree(MANDATE)));
   });
 
   test("scopes itself to the runSubagent session before its mandate starts", () => {

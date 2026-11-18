@@ -23,9 +23,6 @@ import { code, codeList, PLUGIN, SKILLS } from "./plugin.mjs";
 // Claude Code manifest and stamps no preambles; its one pointer is in
 // poteto-mode's Platform Adaptation section, as Pi's is.
 // Antigravity keys its hooks by group name instead of the shared hooks schema.
-// VS Code's Local agent reads the Claude Code build as it ships, so its row names
-// the Claude Code manifest and stamps no preambles. It gets routing from the
-// plugin's rules/ instruction file instead of a hook.
 export const RUNTIMES = [
   {
     name: "Codex",
@@ -271,25 +268,15 @@ export function validateMiniMaxPackage({ pathExists }) {
   }
 }
 
-// The manifests VS Code looks for in a plugin directory, in the order its
-// parser tries them. The first one present picks the plugin's format.
 export const VSCODE_MANIFESTS = [".plugin/plugin.json", ".claude-plugin/plugin.json", "plugin.json", ".github/plugin/plugin.json"];
 
-// The routing instruction VS Code's Local agent attaches to every request. A
-// Copilot session in VS Code loads only *.instructions.md from a rules/
-// directory, so the .md suffix keeps this file out of those sessions.
 export const VSCODE_ROUTING_RULE = "rules/pstack-routing.md";
 
-// Local attaches the rule to every request, so its size is a cost on every turn.
 export const VSCODE_ROUTING_BUDGET = 3000;
 
-// The lines of the Claude Code mandate that say when to route.
-const routingCriteria = (text) =>
+export const routingCriteria = (text) =>
   text.split("\n").filter((line) => line.startsWith("- it ") || line.startsWith("It routes to the right pstack skill"));
 
-// VS Code's Local agent reads pstack as a Claude Code plugin, whose default
-// rules/ directory holds the routing rule, and attaches the rule when its
-// front matter says applyTo '**'.
 export function validateVSCodeLocalPackage({ manifest, read, pathExists }) {
   const rule = `${PLUGIN}/${VSCODE_ROUTING_RULE}`;
   const first = VSCODE_MANIFESTS.find((file) => pathExists(`${PLUGIN}/${file}`));
@@ -565,9 +552,6 @@ export function minimaxModelNamesSection(models) {
   );
 }
 
-// VS Code's Local agent ships no default models either: `runSubagent` takes the
-// names the chat model picker shows, and the account's plan and policy decide
-// which of them a session can reach.
 export function vscodeLocalModelNamesSection(models) {
   return (
     "Skills name Claude Code model aliases in their Models sections. Those aliases are not VS Code model names, " +
