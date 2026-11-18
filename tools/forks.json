@@ -84,6 +84,12 @@
       "since": "0.9.10",
       "upstream": "not-proposed"
     },
+    "plugins/pstack/skills/poteto-mode/playbooks/eval.md": {
+      "kind": "port-feature",
+      "why": "Points step 6 at the candidates' subagent transcripts, which find-transcript.mjs prints after the session's own, and at the meta.json beside each that names its Agent call, because Claude Code keeps only a subagent's brief and final report in the parent's transcript.",
+      "since": "0.9.142",
+      "upstream": "not-proposed"
+    },
     "plugins/pstack/skills/poteto-mode/playbooks/feature.md": {
       "kind": "policy",
       "why": "Gives every file-writing delegate its own worktree, based on the branch's HEAD when it builds on unmerged commits, and forbids writing in a worktree a delegate still holds.",
@@ -230,7 +236,7 @@
     },
     "plugins/pstack/skills/recall/SKILL.md": {
       "kind": "policy",
-      "why": "Sweeps the locations the project's standing rules name before reporting anything as never recorded and applies the human-rulings epistemics, on top of Claude Code's transcript path.",
+      "why": "Sweeps the locations the project's standing rules name before reporting anything as never recorded and applies the human-rulings epistemics, on top of Claude Code's transcript path, and names find-transcript.mjs as the source of a subagent's full transcript.",
       "since": "0.9.2",
       "upstream": "not-proposed"
     },
@@ -248,7 +254,7 @@
     },
     "plugins/pstack/skills/show-me-your-work/SKILL.md": {
       "kind": "policy",
-      "why": "Documents that log.sh also neutralizes a cell opening with a double quote.",
+      "why": "Documents that log.sh also neutralizes a cell opening with a double quote, and points the transcript audit and the cross-model reviewer at the run's subagent transcripts, which find-transcript.mjs prints, because Claude Code keeps only a subagent's brief and final report in the parent's transcript.",
       "since": "0.9.41",
       "upstream": "not-proposed"
     },
