@@ -2,6 +2,10 @@
 
 This file is the release changelog, with one `## <version> - <title>` entry per release, newest first. The Cursor-to-Claude rewrite rules live in [`tools/substitutions.json`](tools/substitutions.json), and the [sync boundary](CONTRIBUTING.md#the-sync-boundary) in `CONTRIBUTING.md` defines how a change to upstream's skill content is declared.
 
+## 0.9.142 - eval and show-me-your-work read subagent transcripts
+
+Claude Code keeps each subagent's tool calls in its own transcript under the session's `<id>/subagents/` directory, and the session's transcript keeps only the subagent's brief and final report. Step 6 of the `eval` playbook graded each candidate from the files it read, but pointed only at the projects directory, where the parent's transcript holds just that self-report. The step now runs `find-transcript.mjs`, which prints the session's transcript and then each subagent's, and names the `agent-<id>.meta.json` beside each subagent's transcript, whose `description` tells the candidates apart. The **show-me-your-work** audit checks a row about delegated work against that subagent's transcript, found the same way, and the cross-model reviewer reads every transcript the audit read. The **recall** skill's step 6 says that a subagent's full transcript is its own, which the finder prints after its parent session's.
+
 ## 0.9.141 - install and support links name the Electivus fork
 
 The install commands in the README and `docs/reference.md`, the support and security links, the issue and PR templates, and the `homepage` and `repository` fields of every manifest named michael-denyer/pstack-claude, so a user who followed them installed upstream and filed reports there. They now name Electivus/pstack-claude. The plugin author and marketplace owner, the license notices, and links to numbered upstream issues and PRs still credit upstream. The README says the repository is a fork of michael-denyer/pstack-claude. `tests/fork-links.test.mjs` fails when a tracked file other than this changelog names the upstream repository for anything but credit, so an upstream merge cannot bring the old links back unnoticed.
