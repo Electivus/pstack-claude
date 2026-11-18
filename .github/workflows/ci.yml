@@ -33,6 +33,20 @@ jobs:
         run: bun tools/generate.mjs --check
       - name: Tool and invariant fixture tests
         run: bun test tests/
+      # Plugin auto-update installs by version number, so a pull request that
+      # edits a file an installed copy reads without raising VERSION reaches
+      # nobody. This job is a required check, so the step blocks the merge. The
+      # checkout is the pull request merged into its base, one commit deep, and
+      # the diff needs their merge base, so the step fetches the full history of
+      # the merge commit and the base. The repository is public, so the fetch
+      # needs no credentials, as in the forks job.
+      - name: Check a release accompanies changes to installed files
+        if: ${{ !cancelled() && github.event_name == 'pull_request' }}
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          git fetch --no-tags --unshallow origin "$BASE_SHA" "$(git rev-parse HEAD)"
+          bun tools/check-release.mjs "$BASE_SHA"
 
   windows-hooks:
     name: Windows session hooks
