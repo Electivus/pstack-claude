@@ -873,13 +873,13 @@ describe("plan, changes, apply", () => {
     const root = repoCopy();
     const manifest = "plugins/pstack/.github/plugin/plugin.json";
     const hooks = "plugins/pstack/hooks/copilot-hooks.json";
-    writeFileSync(join(root, hooks), readFileSync(join(root, hooks), "utf8").replace("hooks/pre-tool-use.sh", "hooks/gone.sh"));
-    expect(problems(root)).toEqual([expect.stringContaining("hooks/gone.sh does not exist")]);
+    writeFileSync(join(root, hooks), readFileSync(join(root, hooks), "utf8").replace("hooks/pre-tool-use.mjs", "hooks/gone.mjs"));
+    expect(problems(root)).toEqual([expect.stringContaining("hooks/gone.mjs does not exist")]);
     const text = readFileSync(join(root, manifest), "utf8");
     writeFileSync(join(root, manifest), text.replace('"name": "pstack"', '"name": "other"'));
     expect(problems(root)).toEqual([
       expect.stringContaining(`${manifest}: name "other"`),
-      expect.stringContaining("hooks/gone.sh does not exist"),
+      expect.stringContaining("hooks/gone.mjs does not exist"),
     ]);
   });
 

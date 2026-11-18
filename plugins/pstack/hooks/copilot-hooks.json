@@ -18,7 +18,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "sh \"${COPILOT_PLUGIN_ROOT}/hooks/pre-tool-use.sh\"",
+            "command": "node \"${COPILOT_PLUGIN_ROOT}/hooks/pre-tool-use.mjs\" || exit 0",
             "powershell": "exit 0",
             "timeout": 5
           }

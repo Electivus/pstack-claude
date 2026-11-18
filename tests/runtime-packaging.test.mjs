@@ -303,14 +303,14 @@ describe("validateHooks", () => {
 
   test("accepts exit 0 as the only PowerShell override that names no plugin file", () => {
     const root = "COPILOT_PLUGIN_ROOT";
-    const sh = '"${COPILOT_PLUGIN_ROOT}/hooks/pre-tool-use.sh"';
-    expect(() => validateHooks(hooks(sh, undefined, "exit 0"), { statOf: () => exec, root })).not.toThrow();
+    const node = 'node "${COPILOT_PLUGIN_ROOT}/hooks/pre-tool-use.mjs"';
+    expect(() => validateHooks(hooks(node, undefined, "exit 0"), { statOf: () => plain, root })).not.toThrow();
     for (const ps of [
       'powershell.exe -File "$env:COPILOT_PLUGN_ROOT/hooks/session-start.ps1" copilot',
       'powershell.exe -File "${COPILOT_PLUGIN_ROOT}/hooks/missing.ps1" copilot',
       "Write-Output allow",
     ]) {
-      expect(() => validateHooks(hooks(sh, undefined, ps), { statOf: () => exec, root })).toThrow("does not reference ${COPILOT_PLUGIN_ROOT}");
+      expect(() => validateHooks(hooks(node, undefined, ps), { statOf: () => plain, root })).toThrow("does not reference ${COPILOT_PLUGIN_ROOT}");
     }
   });
 

@@ -455,12 +455,12 @@ if [ -n "${SMOKE_GITHUB:-}" ]; then
   jq -n --arg repo "${SMOKE_GITHUB%@*}" --arg ref "${SMOKE_GITHUB#*@}" \
     '{extraKnownMarketplaces: {"pstack-claude": {source: {source: "github", repo: $repo, ref: $ref}}}}' >"$home/settings.json"
   copilot plugin install pstack@pstack-claude >/dev/null 2>&1 || true
-  if [ -e "$home/installed-plugins/pstack-claude/pstack/hooks/pre-tool-use.sh" ]; then
+  if [ -e "$home/installed-plugins/pstack-claude/pstack/hooks/pre-tool-use.mjs" ]; then
     pass "GitHub install copied the plugin under installed-plugins"
     sandboxed "GitHub install" "$home/installed-plugins/pstack-claude/pstack"
     script_run "GitHub install" "$home/installed-plugins/pstack-claude/pstack"
   else
-    fail "GitHub install of $SMOKE_GITHUB left no hooks/pre-tool-use.sh under $home/installed-plugins/pstack-claude/pstack"
+    fail "GitHub install of $SMOKE_GITHUB left no hooks/pre-tool-use.mjs under $home/installed-plugins/pstack-claude/pstack"
   fi
 fi
 
