@@ -41,7 +41,7 @@
 #   SMOKE_MODEL=gpt-5-mini tests/copilot-smoke.sh
 #   SMOKE_SETUP_MODELS="gpt-5.4-mini claude-sonnet-5" tests/copilot-smoke.sh   # setup probes 5 and 6, once per model
 #   KEEP=1 tests/copilot-smoke.sh     # keep the temp dir; a failed or aborted run always keeps it
-#   SMOKE_GITHUB=michael-denyer/pstack-claude@main tests/copilot-smoke.sh
+#   SMOKE_GITHUB=Electivus/pstack-claude@main tests/copilot-smoke.sh
 set -euo pipefail
 
 if ! command -v copilot >/dev/null 2>&1; then

@@ -13,9 +13,9 @@ body:
     attributes:
       label: Before you file
       options:
-        - label: I reproduced this on the [latest release](https://github.com/michael-denyer/pstack-claude/releases/latest).
+        - label: I reproduced this on the [latest version](https://github.com/Electivus/pstack-claude/blob/main/CHANGES.md).
           required: true
-        - label: I searched [open and closed issues](https://github.com/michael-denyer/pstack-claude/issues?q=is%3Aissue) and [CHANGES.md](https://github.com/michael-denyer/pstack-claude/blob/main/CHANGES.md) and did not find this bug.
+        - label: I searched [open and closed issues](https://github.com/Electivus/pstack-claude/issues?q=is%3Aissue) and [CHANGES.md](https://github.com/Electivus/pstack-claude/blob/main/CHANGES.md) and did not find this bug.
           required: true
   - type: input
     id: pstack-version
