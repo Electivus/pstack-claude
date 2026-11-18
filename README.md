@@ -77,7 +77,7 @@ The Copilot build is tested on Copilot CLI 1.0.87 through 1.0.92. On those versi
 <details>
 <summary><strong>VS Code (GitHub Copilot Chat)</strong></summary>
 
-In VS Code, run **Chat: Add Plugin Marketplace** and enter `michael-denyer/pstack-claude`, or add that repository to the `chat.plugins.marketplaces` setting. Then install `pstack` from the agent plugins list. To try a checkout instead, add `"<absolute path>/plugins/pstack": true` to the `chat.pluginLocations` setting. Start a new chat afterwards. Keep one install. VS Code also lists a plugin installed with `copilot plugin install`. That install serves Copilot sessions, and it has not been checked in Local sessions.
+In VS Code, run **Chat: Add Plugin Marketplace** and enter `Electivus/pstack-claude`, or add that repository to the `chat.plugins.marketplaces` setting. Then install `pstack` from the agent plugins list. To try a checkout instead, add `"<absolute path>/plugins/pstack": true` to the `chat.pluginLocations` setting. Start a new chat afterwards. Keep one install. VS Code also lists a plugin installed with `copilot plugin install`. That install serves Copilot sessions, and it has not been checked in Local sessions.
 
 One VS Code install serves both session types in the chat's session picker.
 
