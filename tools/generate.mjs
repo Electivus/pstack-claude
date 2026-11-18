@@ -60,7 +60,7 @@ import { markdownFiles, pathIsInside, validateProsePaths, validateSkillsTree, wa
 const repo = join(dirname(fileURLToPath(import.meta.url)), "..");
 const repoRelative = (root, file) => relative(root, file).split(sep).join("/");
 
-const VERSIONED_MANIFESTS = [
+export const VERSIONED_MANIFESTS = [
   ".claude-plugin/marketplace.json",
   `${PLUGIN}/.claude-plugin/plugin.json`,
   ...RUNTIMES.map((runtime) => runtime.manifest),

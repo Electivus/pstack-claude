@@ -9,7 +9,7 @@ const repoRoot = fileURLToPath(new URL("..", import.meta.url));
 
 // A worktree under /tmp on macOS reaches every tool through a symlink, and
 // node leaves that symlink in argv[1].
-test.each(["validate-skills.mjs", "sync.mjs"])("%s runs when its path crosses a symlink", (tool) => {
+test.each(["validate-skills.mjs", "sync.mjs", "check-release.mjs"])("%s runs when its path crosses a symlink", (tool) => {
   const dir = mkdtempSync(join(tmpdir(), "pstack-linked-repo-"));
   try {
     const linked = join(dir, "repo");
