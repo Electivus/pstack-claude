@@ -296,7 +296,7 @@ jobs:
           shopt -s extglob failglob
           # shellcheck disable=SC2206 # FILES is a glob to expand here
           files=(test/$FILES.test.ts)
-          JAVA="$(command -v java)" bash "$GITHUB_WORKSPACE/.github/scripts/statechart-watchdog.sh" node --disable-warning=ExperimentalWarning --test ${SELECT:+"$SELECT"} "${files[@]}"
+          JAVA="$(command -v java)" bash "$GITHUB_WORKSPACE/.github/scripts/statechart-watchdog" node --disable-warning=ExperimentalWarning --test ${SELECT:+"$SELECT"} "${files[@]}"
 
   statechart-windows:
     name: Statechart on Windows
@@ -379,8 +379,10 @@ jobs:
       - name: Run shellcheck
         run: |
           shellcheck --version
-          find . -path ./.git -prune -o -path '*/node_modules' -prune -o -name '*.sh' -print |
-            sed 's#^\./##' | sort | tee /dev/stderr | xargs shellcheck --severity=warning
+          # Shell scripts carry no .sh extension, so find them by an sh or bash shebang.
+          git ls-files | while IFS= read -r file; do
+            if head -n 1 -- "$file" | grep -qE '^#!(/usr/bin/env |/bin/)(ba)?sh( |$)'; then printf '%s\n' "$file"; fi
+          done | sort | tee /dev/stderr | xargs shellcheck --severity=warning
 
   actionlint:
     name: Workflow lint
