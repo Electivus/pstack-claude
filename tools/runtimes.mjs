@@ -532,7 +532,9 @@ export function copilotModelNamesSection(models) {
     "After it writes the sheet, it runs its `check-sheet.sh` script, which applies the hook's checks.\n\n" +
     "Run `setup-pstack`, and the parent session that orchestrates a panel, on a model at least as strong as " +
     "gpt-5.4-mini or a Sonnet-class Claude model. On a Haiku-class model, setup picked models the user never " +
-    "chose in about half of the smoke runs."
+    "chose in about half of the smoke runs. In a VS Code Copilot session, Claude Haiku 4.5 could not start a " +
+    "session with pstack loaded, because the static system messages and tool definitions exceeded its context " +
+    "budget (observed on 2026-11-18). Do not pick it as the session model there."
   );
 }
 

@@ -193,6 +193,31 @@ describe("vscode-local-tools.md", () => {
   });
 });
 
+describe("the two VS Code session types", () => {
+  const copilotMapping = readTree(RUNTIMES.find((runtime) => runtime.name === "GitHub Copilot").tools);
+  const setup = readTree(`${PLUGIN}/skills/setup-pstack/references/runtimes.md`);
+  const sheet = mapping.match(/`(~\/\.copilot\/instructions\/[^`]+)`/)?.[1];
+
+  test("each mapping sends a reader in the other session type to the other mapping", () => {
+    expect(copilotMapping).toContain("`runSubagent`");
+    expect(copilotMapping).toContain(`[${vscode.mapping}](${vscode.mapping})`);
+    expect(mapping).toContain("`task`, `skill`, and `view`");
+    expect(mapping).toContain("[copilot-tools.md](copilot-tools.md)");
+  });
+
+  test("setup-pstack lists the Local sheet in its table and writes it in its section, at the path the mapping names", () => {
+    expect(sheet).toBe("~/.copilot/instructions/pstack-models-vscode-local.instructions.md");
+    expect(setup).toContain(`| VS Code Local agent | \`${sheet}\` |`);
+    expect(setup).toContain(`\`<home>/${sheet.slice(2)}\``);
+  });
+
+  test("setup-pstack tells the Local agent not to run the Copilot sheet checker on a Local sheet", () => {
+    const local = setup.slice(setup.indexOf("## VS Code Local agent"), setup.indexOf("## Muse"));
+    expect(local).toContain("Do not run `check-sheet.sh`");
+    expect(local).toContain("pstack-list-models");
+  });
+});
+
 describe("vscode-local-tools.md Model names", () => {
   const section = vscodeLocalModelNamesSection(models);
 
