@@ -136,8 +136,8 @@ describe("Copilot setup questions", () => {
   });
 
   test("setup runs the vendored sheet check after writing", () => {
-    const check = "scripts/check-sheet.sh";
-    expect(questions).toContain(`sh <this skill's directory>/${check}`);
+    const check = "scripts/check-sheet.mjs";
+    expect(questions).toContain(`node <this skill's directory>/${check}`);
     expect(existsSync(join(setupDir, check))).toBe(true);
   });
 });

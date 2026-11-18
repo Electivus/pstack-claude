@@ -3,7 +3,7 @@
 BEGIN {
   CONTRACT["skills/show-me-your-work/scripts/log.sh"] = "log"
   CONTRACT["skills/reflect/scripts/find-transcript.mjs"] = "transcript"
-  CONTRACT["skills/setup-pstack/scripts/check-sheet.sh"] = "optional-path"
+  CONTRACT["skills/setup-pstack/scripts/check-sheet.mjs"] = "optional-path"
   CONTRACT["skills/poteto-mode/scripts/check-playbooks.mjs"] = "optional-path"
   CONTRACT["skills/poteto-mode/scripts/check-plan.mjs"] = "one-path"
   CONTRACT["skills/poteto-mode/scripts/worktree-audit.mjs"] = "paths"

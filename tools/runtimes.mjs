@@ -552,7 +552,7 @@ export function copilotModelNamesSection(models) {
     "list (Claude, GPT, Gemini, Grok, and so on). pstack ships no default Copilot panel. If only one vendor is " +
     "reachable, vary reasoning effort and note in the verdict that diversity was reduced.\n\n" +
     "`setup-pstack` lists the models from the `model` enum of the `task` tool and writes only IDs it saw there. " +
-    "After it writes the sheet, it runs its `check-sheet.sh` script, which applies the hook's checks.\n\n" +
+    "After it writes the sheet, it runs its `check-sheet.mjs` script, which applies the hook's checks.\n\n" +
     "Run `setup-pstack`, and the parent session that orchestrates a panel, on a model at least as strong as " +
     "gpt-5.4-mini or a Sonnet-class Claude model. On a Haiku-class model, setup picked models the user never " +
     "chose in about half of the smoke runs. In a VS Code Copilot session, Claude Haiku 4.5 could not start a " +

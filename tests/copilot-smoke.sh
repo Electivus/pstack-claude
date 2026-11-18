@@ -16,12 +16,12 @@
 #      never reaches the context
 #   5. with no model sheet, a multi-model skill runs setup-pstack first
 #   6. setup-pstack writes no sheet without answers, and exactly the supplied
-#      IDs, then runs check-sheet.sh
+#      IDs, then runs check-sheet.mjs
 #   7. without --allow-all-paths, and with the temp dir outside the sandbox, the
 #      saved model choices reach the session with no read of the sheet, and a
 #      plugin playbook loads, with no path-access request at all
 #   8. the PreToolUse hook denies a pstack:* task call on an off-sheet model,
-#      fires once per tool call, and runs a vendored script and check-sheet.sh
+#      fires once per tool call, and runs a vendored script and check-sheet.mjs
 #      with no --allow-all-tools and no permission request
 #   9. a second plugin's sessionStart context reaches the model next to pstack's
 #      (github/copilot-cli#3589)
@@ -274,10 +274,10 @@ setup_probes() {
       else
         fail "$setup_model: supplied answers: wrong or missing lines${wrong} ($sheet: $(tr '\n' '|' <"$sheet"))"
       fi
-      if jq -e 'select(.type == "tool.execution_start" and .data.toolName == "bash") | select(.data.arguments.command | contains("check-sheet.sh"))' "$events" >/dev/null; then
-        pass "$setup_model: setup ran check-sheet.sh after writing"
+      if jq -e 'select(.type == "tool.execution_start" and .data.toolName == "bash") | select(.data.arguments.command | contains("check-sheet.mjs"))' "$events" >/dev/null; then
+        pass "$setup_model: setup ran check-sheet.mjs after writing"
       else
-        fail "$setup_model: setup did not run check-sheet.sh ($events)"
+        fail "$setup_model: setup did not run check-sheet.mjs ($events)"
       fi
     fi
   fi
@@ -351,12 +351,12 @@ script_run() {
   fi
   # setup-pstack's last step: check the sheet it wrote, with no prompt.
   full_sheet
-  events="$(probe -p "Run exactly this one bash command and nothing else, then reply with its output verbatim: sh $2/skills/setup-pstack/scripts/check-sheet.sh")"
+  events="$(probe -p "Run exactly this one bash command and nothing else, then reply with its output verbatim: node $2/skills/setup-pstack/scripts/check-sheet.mjs")"
   if jq -e 'select(.type == "tool.execution_complete" and .data.success == true) | select(.data.result | tostring | contains("sheet ok"))' "$events" >/dev/null \
     && ! jq -e 'select(.type | startswith("permission."))' "$events" >/dev/null; then
-    pass "$label: check-sheet.sh ran with no permission request and passed the sheet"
+    pass "$label: check-sheet.mjs ran with no permission request and passed the sheet"
   else
-    fail "$label: check-sheet.sh did not run cleanly without a prompt ($events)"
+    fail "$label: check-sheet.mjs did not run cleanly without a prompt ($events)"
   fi
   rm -f "$home/pstack-models.md"
 }

@@ -261,10 +261,10 @@ describe("PreToolUse model check for pstack agents", () => {
   test.each(["utf8", "utf16le"])("setup, context, and model enforcement agree on a %s sheet", (encoding) => {
     const text = Buffer.from(`\uFEFF${sheet().replaceAll("\n", "\r\n")}`, encoding);
     writeFileSync(sheetPath, text);
-    const invoke = (relative, args = []) => spawnSync("sh", [join(pluginRoot, relative), ...args], {
+    const invoke = (relative, args = []) => spawnSync(relative.endsWith(".mjs") ? "node" : "sh", [join(pluginRoot, relative), ...args], {
       env: { PATH: process.env.PATH, ...env }, encoding: "utf8",
     });
-    const checked = invoke("skills/setup-pstack/scripts/check-sheet.sh");
+    const checked = invoke("skills/setup-pstack/scripts/check-sheet.mjs");
     expect({ status: checked.status, out: checked.stdout, err: checked.stderr }).toEqual({ status: 0, out: "sheet ok\n", err: "" });
     const started = invoke("hooks/session-start.sh", ["copilot"]);
     expect(started.status).toBe(0);
@@ -450,6 +450,6 @@ describe("PreToolUse vendored script runs", () => {
 
   // setup-pstack runs its sheet check in this form after it writes the sheet.
   test("approves setup-pstack's sheet check", () => {
-    expect(run(bash(`sh ${root}/skills/setup-pstack/scripts/check-sheet.sh`), env)).toEqual({ status: 0, out: allow, err: "" });
+    expect(run(bash(`node ${root}/skills/setup-pstack/scripts/check-sheet.mjs`), env)).toEqual({ status: 0, out: allow, err: "" });
   });
 });

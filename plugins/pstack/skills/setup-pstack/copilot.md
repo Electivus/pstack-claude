@@ -20,7 +20,7 @@ On Copilot, step 2's saved values are the role lines the plugin hook put in cont
 
 ## Sheet header
 
-A Copilot sheet uses step 6's role lines and settings under this header in place of step 6's paragraph, because every role keeps a line and `check-sheet.sh` checks that:
+A Copilot sheet uses step 6's role lines and settings under this header in place of step 6's paragraph, because every role keeps a line and `check-sheet.mjs` checks that:
 
 ```markdown
 # pstack model configuration
@@ -75,7 +75,7 @@ The panel from questions 4 through 6 writes every panel role, in slot order. On 
 
 Validate as step 5 describes. Copilot's file tools expand neither `~` nor variables, so print the sheet's absolute path with `echo "${COPILOT_HOME:-$HOME/.copilot}/pstack-models.md"` in `bash`, and write the whole sheet to exactly that path in one tool call, so the write asks for path access at most once.
 
-Then run `sh <this skill's directory>/scripts/check-sheet.sh` through `bash`, with the directory's absolute path and no arguments. It checks the Copilot sheet as the plugin hook does at session start: every role has a line, every entry is `inherit-parent`, `auto`, or a model ID with an optional `@<level>`, and each panel names models from two vendors unless the sheet has `panel vendors: any`. It prints `sheet ok`, or `sheet invalid:` and each problem. On `sheet invalid`, fix those lines and write the whole sheet again, then rerun the check. The plugin hook approves the check without a prompt.
+Then run `node <this skill's directory>/scripts/check-sheet.mjs` through `bash`, with the directory's absolute path and no arguments. It checks the Copilot sheet as the plugin hook does at session start: every role has a line, every entry is `inherit-parent`, `auto`, or a model ID with an optional `@<level>`, and each panel names models from two vendors unless the sheet has `panel vendors: any`. It prints `sheet ok`, or `sheet invalid:` and each problem. On `sheet invalid`, fix those lines and write the whole sheet again, then rerun the check. The plugin hook approves the check without a prompt.
 
 For the rest of this session, use the values you just wrote; do not read the sheet back. Later sessions get them from the plugin hook and do not ask again.
 
