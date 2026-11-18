@@ -156,6 +156,11 @@
       "rationale": "the port ships its own audit script, which reads MERGED from each PR's state and needs no base ref; a skill-relative path does not resolve from the working directory"
     },
     {
+      "pattern": "Use the helper `scripts/log.sh <logfile> <phase> <decision> <why> <evidence> <result>`.",
+      "replacement": "Run the helper with `node <plugin>/skills/show-me-your-work/scripts/log.mjs <logfile> <phase> <decision> <why> <evidence> <result>`, where `<plugin>` is the installed plugin directory.",
+      "rationale": "the port ships its own log.mjs, which runs as `node <path>` on machines that block *.sh files and have no PowerShell, and a skill-relative path does not resolve from the working directory"
+    },
+    {
       "pattern": "`.cursor/worktrees/myrepo/x`",
       "replacement": "`.worktrees/myrepo/x`",
       "rationale": "Claude Code has no editor-managed worktree directory"

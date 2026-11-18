@@ -1,7 +1,7 @@
 # Approved entry points and their argument shapes. Adding a script under
 # skills/ does not grant it automatic approval. Unknown forms stay silent.
 BEGIN {
-  CONTRACT["skills/show-me-your-work/scripts/log.sh"] = "log"
+  CONTRACT["skills/show-me-your-work/scripts/log.mjs"] = "log"
   CONTRACT["skills/reflect/scripts/find-transcript.mjs"] = "transcript"
   CONTRACT["skills/setup-pstack/scripts/check-sheet.mjs"] = "optional-path"
   CONTRACT["skills/poteto-mode/scripts/check-playbooks.mjs"] = "optional-path"
@@ -14,8 +14,7 @@ function script_contract(script, runner, T, first, n,    kind, count, i) {
   if (!(script in CONTRACT)) return 0
   kind = CONTRACT[script]
   if (runner != "") {
-    if (kind == "log") { if (runner != "bash") return 0 }
-    else if (script ~ /\.sh$/) { if (runner != "sh" && runner != "bash") return 0 }
+    if (script ~ /\.sh$/) { if (runner != "sh" && runner != "bash") return 0 }
     else if (runner != "node") return 0
   }
   count = n - first + 1
