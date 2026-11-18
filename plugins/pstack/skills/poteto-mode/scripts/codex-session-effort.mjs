@@ -40,10 +40,26 @@ export async function activeEffort(stream, threadId) {
   return effort;
 }
 
+// Node 22 prints an ExperimentalWarning to stderr when node:sqlite loads. That
+// warning is not this script's output, so it is dropped and any other passes.
+async function importSqlite() {
+  const emitWarning = process.emitWarning;
+  process.emitWarning = (warning, ...rest) => {
+    if (!String(warning).startsWith("SQLite is an experimental feature")) emitWarning.call(process, warning, ...rest);
+  };
+  try {
+    return await import("node:sqlite");
+  } catch {
+    return null;
+  } finally {
+    process.emitWarning = emitWarning;
+  }
+}
+
 async function currentRollout(threadId, home) {
   const databases = readdirSync(home).filter((name) => /^state_\d+\.sqlite$/.test(name));
   if (databases.length > 1) throw new Error("current thread state database is ambiguous");
-  const sqlite = databases.length === 1 ? await import("node:sqlite").catch(() => null) : null;
+  const sqlite = databases.length === 1 ? await importSqlite() : null;
   if (sqlite) {
     const db = new sqlite.DatabaseSync(join(home, databases[0]), { readOnly: true });
     try {
