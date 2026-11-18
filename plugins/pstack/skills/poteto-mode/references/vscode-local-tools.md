@@ -56,7 +56,7 @@ Skills name Claude Code model aliases in their Models sections. Those aliases ar
 
 VS Code attaches the plugin's `pstack-routing` instruction to every Local request. No hook is involved, so routing works where an organization turns chat hooks off, and the `session hook` setting does not control it. To stop routing, disable the `pstack-routing` instruction in the Chat Customizations view, or disable the plugin.
 
-When hooks are on, Local also runs the plugin's Claude Code `SessionStart` hook. That hook prints plain text, which VS Code's source shows Local dropping for `SessionStart`, so the mandate does not arrive twice.
+When hooks are on, Local also runs the plugin's Claude Code `SessionStart` hook. That hook prints plain text, which VS Code's source shows Local dropping for `SessionStart`, so the mandate does not arrive twice. On Windows, Local runs the hook's `powershell` field, `exit 0`, in place of its command, which PowerShell cannot run, so the first turn shows no hook warning.
 
 If the instruction is missing from a session (applying instructions turned off, or a policy that blocks customizations), type `/pstack:poteto-mode` to load the skill, or add a standing instruction to `AGENTS.md`.
 
