@@ -22,4 +22,4 @@
 - [ ] `bun tools/generate.mjs --check` exits 0.
 - [ ] I changed model defaults only in `plugins/pstack/models.json`, and every Pi model ID is in Pi's catalog for that provider.
 - [ ] If this changes skill behavior, it adds a `CHANGES.md` entry and bumps `VERSION`, or names the release PR that will.
-- [ ] If this touches `plugins/pstack/pi/`, `pi-tools.md`, `plugins/pstack/hooks/`, `copilot-tools.md`, or `setup-pstack`, I ran the runtime checks that [CONTRIBUTING.md](https://github.com/michael-denyer/pstack-claude/blob/main/CONTRIBUTING.md#before-you-open-a-pr) lists for those paths.
+- [ ] If this touches `plugins/pstack/pi/`, `pi-tools.md`, `plugins/pstack/hooks/`, `copilot-tools.md`, or `setup-pstack`, I ran the runtime checks that [CONTRIBUTING.md](https://github.com/Electivus/pstack-claude/blob/main/CONTRIBUTING.md#before-you-open-a-pr) lists for those paths.

@@ -1,9 +1,10 @@
 # pstack
 
 [![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-support-yellow?logo=buy-me-a-coffee&logoColor=white)](https://buymeacoffee.com/codenyer)
-[![Mentioned in Awesome Claude Code](https://awesome.re/mentioned-badge.svg)](https://github.com/hesreallyhim/awesome-claude-code)
 
 Lauren Tan's [pstack](https://github.com/cursor/plugins/tree/main/pstack) is an opinionated Cursor skill stack that improves agent outcomes. This is a port for Claude Code, Codex, Pi, GitHub Copilot, Muse, and other agent harnesses. It tracks upstream and also carries named policy forks, each declared in [`tools/forks.json`](tools/forks.json).
+
+This repository is Electivus's public fork of [michael-denyer/pstack-claude](https://github.com/michael-denyer/pstack-claude), the port's upstream. The install commands below install the fork, and [CHANGES.md](CHANGES.md) lists the releases it adds.
 
 Tell `poteto-mode` your goal and it will invoke the correct workflow for the task. It keeps your code concise, simple and verified.
 
@@ -21,7 +22,7 @@ This port translates upstream's Cursor skills for Claude Code before installatio
 Run in Claude Code 2.1.292 or later:
 
 ```text
-/plugin marketplace add michael-denyer/pstack-claude
+/plugin marketplace add Electivus/pstack-claude
 /plugin install pstack@pstack-claude
 ```
 
@@ -36,7 +37,7 @@ Claude Code leaves auto-update off for third-party marketplaces, so pstack stays
 Run in your terminal:
 
 ```shell
-codex plugin marketplace add michael-denyer/pstack-claude
+codex plugin marketplace add Electivus/pstack-claude
 codex plugin add pstack@pstack-claude
 ```
 
@@ -50,7 +51,7 @@ Invoke a skill by typing `$` and its name, such as `$poteto-mode` or `$babysit`,
 Run in your terminal, with Pi 1.5.1 or later:
 
 ```shell
-pi install git:github.com/michael-denyer/pstack-claude
+pi install git:github.com/Electivus/pstack-claude
 ```
 
 The package loads the skills and the pstack Pi extension, which adds the subagent, question, and wake-up tools the skills use, plus `/loop` and the routing instruction. Invoke a skill with `/skill:<name>`.
@@ -63,7 +64,7 @@ The package loads the skills and the pstack Pi extension, which adds the subagen
 Run in your terminal:
 
 ```shell
-copilot plugin marketplace add michael-denyer/pstack-claude
+copilot plugin marketplace add Electivus/pstack-claude
 copilot plugin install pstack@pstack-claude
 ```
 
@@ -79,7 +80,7 @@ The Copilot build is tested on Copilot CLI 1.0.87 through 1.0.92. On those versi
 Run in your terminal:
 
 ```shell
-git clone https://github.com/michael-denyer/pstack-claude
+git clone https://github.com/Electivus/pstack-claude
 cd pstack-claude
 muse plugins install ./plugins/pstack
 muse plugins approve pstack
@@ -95,7 +96,7 @@ The first command installs the native Muse plugin bundle. The second approves it
 Run in your terminal:
 
 ```shell
-omp plugin marketplace add michael-denyer/pstack-claude
+omp plugin marketplace add Electivus/pstack-claude
 omp plugin install --scope user pstack@pstack-claude
 ```
 
@@ -109,7 +110,7 @@ Restart OMP after installing, disabling, or uninstalling pstack. OMP 18.16.0 sha
 After a release containing `kimi.plugin.json` is published, close other Kimi sessions and install it in a fresh Kimi Code CLI session:
 
 ```text
-/plugins install https://github.com/michael-denyer/pstack-claude
+/plugins install https://github.com/Electivus/pstack-claude
 /reload
 ```
 
@@ -121,7 +122,7 @@ To test an unreleased checkout, use `/plugins install /absolute/path/to/pstack-c
 <summary><strong>Grok Build</strong></summary>
 
 ```shell
-git clone https://github.com/michael-denyer/pstack-claude
+git clone https://github.com/Electivus/pstack-claude
 cd pstack-claude
 grok plugin install "$PWD/plugins/pstack" --trust
 grok plugin enable pstack
@@ -137,7 +138,7 @@ Start a new session and use `/poteto-mode` to load the skill explicitly. To upda
 For a first install, check that `${MINIMAX_DATA_DIR:-$HOME/.minimax}/plugins/pstack` does not already exist. Then run in your terminal:
 
 ```shell
-git clone https://github.com/michael-denyer/pstack-claude
+git clone https://github.com/Electivus/pstack-claude
 cd pstack-claude
 mkdir -p "${MINIMAX_DATA_DIR:-$HOME/.minimax}/plugins"
 cp -R plugins/pstack "${MINIMAX_DATA_DIR:-$HOME/.minimax}/plugins/pstack"
@@ -155,9 +156,9 @@ Clone the repository, then add the absolute path to `plugins/pstack/opencode` to
 Alternatively, install, check, or update the native Git package:
 
 ```bash
-opencode plugin add 'github:michael-denyer/pstack-claude#main'
-opencode plugin check 'github:michael-denyer/pstack-claude#main'
-opencode plugin update 'github:michael-denyer/pstack-claude#main'
+opencode plugin add 'github:Electivus/pstack-claude#main'
+opencode plugin check 'github:Electivus/pstack-claude#main'
+opencode plugin update 'github:Electivus/pstack-claude#main'
 ```
 
 A commit-pinned reference does not advance. If a check immediately after installation reports no package plugins, wait for the server to load it and check again.
@@ -174,7 +175,7 @@ The plugin registers `pstack-` skill IDs and adds routing in root sessions. If r
 Run in your terminal:
 
 ```shell
-git clone https://github.com/michael-denyer/pstack-claude
+git clone https://github.com/Electivus/pstack-claude
 cd pstack-claude
 agy plugin install ./plugins/pstack
 ```
@@ -190,7 +191,7 @@ This installs the native Antigravity plugin bundle (`skills`, `agents`, and `Ses
 Gemini CLI, Prime Agent, and skills-only Codex installs read skills from `~/.agents/skills/`. Run in your terminal:
 
 ```shell
-git clone https://github.com/michael-denyer/pstack-claude
+git clone https://github.com/Electivus/pstack-claude
 cd pstack-claude
 mkdir -p ~/.agents/skills
 for s in plugins/pstack/skills/*/; do
@@ -236,13 +237,13 @@ pstack has no server or telemetry. Anything its skills ask your agent to read, i
 
 This port has no automatic agent-diary reporting or diary opt-in setting. For a local decision trail, ask for [`show-me-your-work`](plugins/pstack/skills/show-me-your-work/SKILL.md). Longer or unattended workflows also invoke it. The trail stays uncommitted by default. If the trail is committed and pushed to a shared PR, anyone with access to the PR can read it.
 
-To share feedback, submit a short, manually reviewed report through [GitHub issues](https://github.com/michael-denyer/pstack-claude/issues). Include the pstack version, runtime, relevant workflow, and observed result. Remove credentials, customer data, private repository links, and sensitive log or configuration values before posting; share a summary instead of raw transcripts.
+To share feedback, submit a short, manually reviewed report through [GitHub issues](https://github.com/Electivus/pstack-claude/issues). Include the pstack version, runtime, relevant workflow, and observed result. Remove credentials, customer data, private repository links, and sensitive log or configuration values before posting; share a summary instead of raw transcripts.
 
 ## Contributing
 
 Thanks for helping make this port better. Bug reports, documentation fixes, and runtime improvements are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for the checks and where your change belongs. Report vulnerabilities privately as described in [SECURITY.md](SECURITY.md).
 
-To support maintenance of this port, [buy the maintainer a coffee](https://buymeacoffee.com/codenyer).
+To support maintenance of the upstream port, [buy Michael Denyer a coffee](https://buymeacoffee.com/codenyer).
 
 ## License
 
