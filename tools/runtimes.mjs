@@ -59,6 +59,17 @@ export const RUNTIMES = [
     pluginRootVar: "COPILOT_PLUGIN_ROOT",
   },
   {
+    name: "VS Code Local agent",
+    mapping: "vscode-local-tools.md",
+    modelNames: vscodeLocalModelNamesSection,
+    // VS Code's Local agent loads this manifest with the skills, the agents, and
+    // the rules/ directory beside it. Its chat hooks can be off by account
+    // policy, so routing comes from the rule file and the build has no manifest
+    // or hooks file of its own.
+    manifest: `${PLUGIN}/.claude-plugin/plugin.json`,
+    validate: validateVSCodeLocalPackage,
+  },
+  {
     name: "Muse",
     key: "muse",
     mapping: "muse-tools.md",
@@ -254,6 +265,54 @@ export function validateMiniMaxPackage({ pathExists }) {
       `${PLUGIN}/${first}: MiniMax Code reads this manifest instead of .claude-plugin/plugin.json, ` +
         "so it would stop loading pstack through its Claude Code reader",
     );
+  }
+}
+
+export const VSCODE_MANIFESTS = [".plugin/plugin.json", ".claude-plugin/plugin.json", "plugin.json", ".github/plugin/plugin.json"];
+
+export const VSCODE_ROUTING_RULE = "rules/pstack-routing.md";
+
+export const VSCODE_ROUTING_BUDGET = 3000;
+
+export const routingCriteria = (text) =>
+  text.split("\n").filter((line) => line.startsWith("- it ") || line.startsWith("It routes to the right pstack skill"));
+
+export function validateVSCodeLocalPackage({ manifest, read, pathExists }) {
+  const rule = `${PLUGIN}/${VSCODE_ROUTING_RULE}`;
+  const first = VSCODE_MANIFESTS.find((file) => pathExists(`${PLUGIN}/${file}`));
+  if (first !== ".claude-plugin/plugin.json") {
+    throw new Error(
+      `${PLUGIN}/${first}: VS Code reads this manifest before .claude-plugin/plugin.json, ` +
+        `so Local sessions would stop reading pstack as a Claude Code plugin and lose ${rule}`,
+    );
+  }
+  if (Object.hasOwn(manifest, "rules")) {
+    throw new Error(
+      `${PLUGIN}/.claude-plugin/plugin.json: a "rules" entry replaces VS Code's default rules/ directory, which holds ${rule}`,
+    );
+  }
+  if (!pathExists(rule)) throw new Error(`${rule} is missing, so VS Code Local sessions get no routing`);
+  const twin = rule.replace(/\.md$/, ".instructions.md");
+  if (pathExists(twin)) {
+    throw new Error(`${twin} exists, so Copilot sessions in VS Code would load the Local routing too; keep only ${rule}`);
+  }
+  const text = read(rule);
+  const front = /^---\n([\s\S]*?)\n---\n/.exec(text)?.[1] ?? "";
+  if (!/^applyTo: '\*\*'$/m.test(front)) {
+    throw new Error(`${rule}: front matter needs applyTo: '**', or VS Code lists the rule instead of attaching it to every Local request`);
+  }
+  for (const needle of ["`references/vscode-local-tools.md`", "`runSubagent`"]) {
+    if (!text.includes(needle)) throw new Error(`${rule}: must name ${needle}, or Local sessions cannot find the mapping or the subagent tool`);
+  }
+  const mandate = `${PLUGIN}/hooks/session-start-context.md`;
+  const expected = routingCriteria(read(mandate));
+  if (!expected.length) throw new Error(`${mandate}: no routing criteria lines to compare ${rule} against`);
+  if (!isDeepStrictEqual(routingCriteria(text), expected)) {
+    throw new Error(`${rule}: routing criteria differ from ${mandate}, so Local would route tasks differently from Claude Code`);
+  }
+  const size = Buffer.byteLength(text);
+  if (size > VSCODE_ROUTING_BUDGET) {
+    throw new Error(`${rule}: ${size} bytes; Local attaches it to every request, so keep it under ${VSCODE_ROUTING_BUDGET}`);
   }
 }
 
@@ -460,7 +519,9 @@ export function copilotModelNamesSection(models) {
     "After it writes the sheet, it runs its `check-sheet.sh` script, which applies the hook's checks.\n\n" +
     "Run `setup-pstack`, and the parent session that orchestrates a panel, on a model at least as strong as " +
     "gpt-5.4-mini or a Sonnet-class Claude model. On a Haiku-class model, setup picked models the user never " +
-    "chose in about half of the smoke runs."
+    "chose in about half of the smoke runs. In a VS Code Copilot session, Claude Haiku 4.5 could not start a " +
+    "session with pstack loaded, because the static system messages and tool definitions exceeded its context " +
+    "budget (observed on 2026-11-18). Do not pick it as the session model there."
   );
 }
 
@@ -488,6 +549,37 @@ export function minimaxModelNamesSection(models) {
     "reachable, vary reasoning effort and note in the verdict that diversity was reduced.\n\n" +
     "`/setup-pstack` writes the configured model list. On MiniMax Code, list the models with `mcode provider list` " +
     "or the `model` slash command and write only keys they show."
+  );
+}
+
+export function vscodeLocalModelNamesSection(models) {
+  return (
+    "Skills name Claude Code model aliases in their Models sections. Those aliases are not VS Code model names, " +
+    "and the VS Code Local build ships no default models. `runSubagent` takes a `model` written as " +
+    "`Model Name (vendor)`, as the chat model picker shows it, and the models an account can reach depend on its plan " +
+    "and policy. The user picks them once.\n\n" +
+    "- The model sheet is `~/.copilot/instructions/pstack-models-vscode-local.instructions.md`. VS Code lists it " +
+    "among the session's instructions as `pstack-models-vscode-local`, with its absolute path, and does not attach its " +
+    `text. Before a skill that needs a role model (${roleSkills(models).map(code).join(", ")}), read it with ` +
+    "`read_file` at that path. With no such entry, omit `model` for every role, say once that the roles run on the " +
+    "session's model and that `setup-pstack` chooses others, and continue.\n" +
+    "- A role line in the sheet is the user's explicit model instruction, so pass its value as `runSubagent`'s `model`, " +
+    "exactly as written. `inherit-parent` or `auto` omits `model`. `runSubagent` has no effort parameter, so ignore a " +
+    "`default effort` line and any `@<level>` suffix.\n" +
+    "- `runSubagent` refuses a model whose cost multiplier is above the session model's, and a name it does not know. " +
+    "On either error, rerun that call without `model`, say which role ran on the session's model, and never substitute " +
+    "a model the sheet does not name.\n" +
+    "- VS Code includes `CLAUDE.md` files and does not expand their `@` lines. A `pstack-models.md` that such a line " +
+    "names is Claude Code's sheet. Do not read it for role models or pass its values to `runSubagent`.\n" +
+    `- Roles that default to the worker model (${tierRoles(models, "worker")}): the worker model the user chose.\n` +
+    `- Roles that default to the strongest model (${tierRoles(models, "strongest")}): the strongest model the user chose.\n` +
+    `- Diverse-model panels (${panelSkills(models)}): the adversarial signal comes from model diversity, so fill a ` +
+    "panel from distinct model families (Claude, GPT, Gemini, Grok, and so on). The vendor in parentheses is " +
+    "`copilot` for nearly every model, so it does not tell families apart. If only one family is reachable, note in " +
+    "the verdict that diversity was reduced.\n\n" +
+    "`/setup-pstack` writes the configured model list. On VS Code's Local agent, list the models from the error of a " +
+    "`runSubagent` call with an unknown `model`, and write only names it shows. The Copilot sheet checker rejects " +
+    "these names and does not apply."
   );
 }
 

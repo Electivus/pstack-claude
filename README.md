@@ -75,6 +75,20 @@ The Copilot build is tested on Copilot CLI 1.0.87 through 1.0.92. On those versi
 </details>
 
 <details>
+<summary><strong>VS Code (GitHub Copilot Chat)</strong></summary>
+
+In VS Code, run **Chat: Add Plugin Marketplace** and enter `Electivus/pstack-claude`, or add that repository to the `chat.plugins.marketplaces` setting. Then install `pstack` from the agent plugins list. To try a checkout instead, add `"<absolute path>/plugins/pstack": true` to the `chat.pluginLocations` setting. Start a new chat afterwards. Keep one install. VS Code also lists a plugin installed with `copilot plugin install`. That install serves Copilot sessions, and it has not been checked in Local sessions.
+
+One VS Code install serves both session types in the chat's session picker.
+
+- **Copilot** sessions run the GitHub Copilot build on the Copilot runtime in VS Code's agent host. They behave as the GitHub Copilot install above does. The SessionStart hook routes tasks, the model sheet is `~/.copilot/pstack-models.md`, which the Copilot CLI shares, and the first skill that needs a model runs `setup-pstack`.
+- **Local** sessions run VS Code's in-process agent, which reads pstack as a Claude Code plugin. An instruction file that the plugin ships, and that VS Code attaches to every request, routes tasks. It works where an organization turns chat hooks off. Subagents run on the session's model until you run `setup-pstack`, which saves your choices in `~/.copilot/instructions/pstack-models-vscode-local.instructions.md`.
+
+Invoke a skill by typing `/pstack:<skill>` in the chat input. To turn Local routing off, disable the `pstack-routing` instruction in the Chat Customizations view, or disable the plugin. The marketplace route comes from VS Code's source and has not been run in a live session. See the [VS Code reference](docs/reference.md#vs-code) for what was checked.
+
+</details>
+
+<details>
 <summary><strong>Muse</strong></summary>
 
 Run in your terminal:
@@ -206,9 +220,9 @@ To update, run `git pull` in the clone, then run the `for` loop again to link sk
 
 ### Configure
 
-pstack provides automatic routing on Claude Code, Codex, GitHub Copilot, Muse, MiniMax Code, Antigravity, Pi, Kimi Code CLI, OMP, and OpenCode 2. The runtimes deliver the instruction at different points: Kimi adds it while the plugin is enabled, OMP adds it before each main-agent turn, and OpenCode adds it at each model step in root sessions. Grok Build exposes a routing hint through a skill description; the model may not follow it. Codex requires hook trust through `/hooks`, and Muse requires `muse plugins approve pstack`. Other harnesses have no automatic routing.
+pstack provides automatic routing on Claude Code, Codex, GitHub Copilot, VS Code, Muse, MiniMax Code, Antigravity, Pi, Kimi Code CLI, OMP, and OpenCode 2. The runtimes deliver the instruction at different points: Kimi adds it while the plugin is enabled, OMP adds it before each main-agent turn, and OpenCode adds it at each model step in root sessions. In VS Code, Copilot sessions route through the Copilot hook, and Local sessions through the instruction file the plugin ships. Grok Build exposes a routing hint through a skill description; the model may not follow it. Codex requires hook trust through `/hooks`, and Muse requires `muse plugins approve pstack`. Other harnesses have no automatic routing.
 
-Run `setup-pstack` to turn automatic routing on or off, change model defaults, or set a reasoning effort per role (`arena runners: opus @xhigh, fable @max`). On OMP, the session hook setting applies globally across profiles; on Kimi, enable or disable the plugin to control routing. See the [routing reference](docs/reference.md#automatic-routing).
+Run `setup-pstack` to turn automatic routing on or off, change model defaults, or set a reasoning effort per role (`arena runners: opus @xhigh, fable @max`). On OMP, the session hook setting applies globally across profiles; on Kimi, enable or disable the plugin to control routing; in VS Code's Local sessions, disable the `pstack-routing` instruction. See the [routing reference](docs/reference.md#automatic-routing).
 
 ## Getting started
 

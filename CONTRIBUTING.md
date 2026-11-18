@@ -6,7 +6,7 @@ Thanks for helping out. This repo is a **port**, not an original work: the `skil
 
 ## The sync boundary
 
-Upstream owns skill content. This port owns the Cursor-to-Claude-Code translation. It also carries named forks, each declared in [`tools/forks.json`](tools/forks.json) as a `port-feature` (Claude Code, Codex, Pi, GitHub Copilot, Muse, or MiniMax Code mechanics upstream cannot carry) or a `policy` (a workflow change the port chose to keep).
+Upstream owns skill content. This port owns the Cursor-to-Claude-Code translation. It also carries named forks, each declared in [`tools/forks.json`](tools/forks.json) as a `port-feature` (Claude Code, Codex, Pi, GitHub Copilot, VS Code's Local agent, Muse, or MiniMax Code mechanics upstream cannot carry) or a `policy` (a workflow change the port chose to keep).
 
 Both kinds of `SKILL.md` change land here. Upstream rarely merges pull requests from outside its own team, so this port does not ask you to land a change there first. Before changing a `SKILL.md`, work out which kind yours is:
 
@@ -58,6 +58,7 @@ The generator rejects missing Markdown links, links outside the skills tree, and
 - No `disable-model-invocation` on a skill.
 - Every `principle-*` leaf sets `user-invocable: false`.
 - Plugin agents use their namespaced `pstack:<name>` names.
+- The VS Code Local build reads the Claude Code manifest and gets routing from `plugins/pstack/rules/pstack-routing.md`. The rule keeps its `.md` suffix, `applyTo: '**'`, the routing conditions of `hooks/session-start-context.md`, and a 3000-byte budget, and no earlier manifest or `rules` entry shadows it.
 
 CI runs `bun tools/generate.mjs --check`, which writes nothing and fails naming each generated file that is stale, missing, or orphaned, so commit the generator's output. Run the same command locally to preview CI. It checks your working tree, not the commit, so a gitignored file such as `.DS_Store` in a generated directory fails only locally, and uncommitted regenerated output passes only locally. `.pre-commit-config.yaml` runs the same command before each commit once you run `prek install` (or `pre-commit install`) in your clone.
 
@@ -74,6 +75,8 @@ If you touched `plugins/pstack/hooks/`, `copilot-tools.md`, or `setup-pstack`, r
 If you touched the Grok plugin manifest, routing skill, or mapping, run `python3 tests/grok-smoke.py` with Grok Build installed. It uses an isolated home and synthetic local provider to check the routing description and explicit skill content; it does not make real model calls.
 
 If you touched `plugins/pstack/hooks/`, `minimax-tools.md`, or the plugin's manifests, run `tests/minimax-smoke.sh`. It installs `@minimax-ai/code` into a throwaway npm prefix, or uses the `mcode` that `MCODE` names, copies the checkout into a throwaway `MINIMAX_DATA_DIR` as a local plugin, and checks that MiniMax Code reads it through the Claude Code manifest with every skill and agent. It makes no model calls and needs no sign-in.
+
+If you touched `plugins/pstack/rules/`, `vscode-local-tools.md`, or the plugin's manifests, `bun test tests/vscode-local.test.mjs` checks the VS Code Local rule and mapping. CI cannot show that VS Code attaches the rule to a Local request, so repeat the live check in the [VS Code reference](docs/reference.md#vs-code) before a release that changes the rule.
 
 If you touched `skills/poteto-mode/scripts/`:
 
@@ -134,6 +137,6 @@ So: any PR that changes skill behavior either bumps the version itself or is fol
 
 ## Reporting bugs
 
-Include the pstack version, the Claude Code (or Codex, Pi, GitHub Copilot, Muse, or MiniMax Code) version, and the reproduction steps. [#22](https://github.com/michael-denyer/pstack-claude/issues/22) is the model to copy: it named versions, gave numbered steps, and included the experiment that isolated the cause.
+Include the pstack version, the Claude Code (or Codex, Pi, GitHub Copilot, VS Code with its session type, Muse, or MiniMax Code) version, and the reproduction steps. [#22](https://github.com/michael-denyer/pstack-claude/issues/22) is the model to copy: it named versions, gave numbered steps, and included the experiment that isolated the cause.
 
 Reproduce the bug on the latest release before you file it, because only that release receives fixes. The [bug report form](.github/ISSUE_TEMPLATE/bug_report.yml) asks for each of these fields. An issue filed through `gh` or the API skips the form, so give the same fields in the same order.

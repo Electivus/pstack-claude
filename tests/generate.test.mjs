@@ -463,8 +463,8 @@ describe("lead lines", () => {
     for (const text of ["# X\n\nA.\n", "# X\n\nA."]) expect(stampLeadLine(text, "A.")).toBe(text);
   });
 
-  test("Codex, Copilot, Muse, and Antigravity stamp a preamble on their noted skills, and Pi, MiniMax Code, OpenCode 2, Kimi Code CLI, OMP, and Grok Build stamp none", () => {
-    expect(RUNTIMES.map((r) => r.name)).toEqual(["Codex", "Pi", "GitHub Copilot", "Muse", "MiniMax Code", "Antigravity", "OMP", "Kimi Code CLI", "Grok Build", "OpenCode 2"]);
+  test("Codex, Copilot, Muse, and Antigravity stamp a preamble on their noted skills, and Pi, VS Code Local agent, MiniMax Code, OpenCode 2, Kimi Code CLI, OMP, and Grok Build stamp none", () => {
+    expect(RUNTIMES.map((r) => r.name)).toEqual(["Codex", "Pi", "GitHub Copilot", "VS Code Local agent", "Muse", "MiniMax Code", "Antigravity", "OMP", "Kimi Code CLI", "Grok Build", "OpenCode 2"]);
     expect(codex.preamble).toBe(
       "On Codex, read the [platform mapping](../poteto-mode/references/codex-tools.md), including its per-skill notes, before following this skill.",
     );
@@ -479,11 +479,12 @@ describe("lead lines", () => {
     );
     expect(RUNTIMES.find((r) => r.name === "Kimi Code CLI").preamble).toBeNull();
     expect(pi.preamble).toBeNull();
+    expect(RUNTIMES.find((r) => r.name === "VS Code Local agent").preamble).toBeNull();
     expect(RUNTIMES.find((r) => r.name === "MiniMax Code").preamble).toBeNull();
     expect(RUNTIMES.find((r) => r.name === "OpenCode 2").preamble).toBeNull();
     expect(RUNTIMES.find((r) => r.name === "OMP").preamble).toBeNull();
     expect(RUNTIMES.find((r) => r.name === "Grok Build").preamble).toBeNull();
-    expect([...leads.values()].flat().filter((line) => /(?:pi|minimax)-tools\.md/.test(line))).toEqual([]);
+    expect([...leads.values()].flat().filter((line) => /(?:pi|minimax|vscode-local)-tools\.md/.test(line))).toEqual([]);
   });
 
   test("poteto-mode's Platform Adaptation sentence points at every runtime's mapping in RUNTIMES order", () => {
