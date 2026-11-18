@@ -11,22 +11,19 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import { decodeSheet, parseSheet } from "./sheet.mjs";
 
-const sheet = process.argv[2] || join(process.env.COPILOT_HOME || join(homedir(), ".copilot"), "pstack-models.md");
-
-function invalid(problems) {
-  process.stdout.write(`sheet invalid: ${problems}\n`);
-  process.exit(1);
+function check(sheet) {
+  let bytes;
+  try {
+    if (!statSync(sheet).isFile()) return `cannot read ${sheet}`;
+    bytes = readFileSync(sheet);
+  } catch {
+    return `cannot read ${sheet}`;
+  }
+  const lines = decodeSheet(bytes);
+  if (lines === null) return `cannot decode ${sheet}`;
+  return parseSheet(lines).problems.join("; ");
 }
 
-let bytes;
-try {
-  if (!statSync(sheet).isFile()) invalid(`cannot read ${sheet}`);
-  bytes = readFileSync(sheet);
-} catch {
-  invalid(`cannot read ${sheet}`);
-}
-const lines = decodeSheet(bytes);
-if (lines === null) invalid(`cannot decode ${sheet}`);
-const { problems } = parseSheet(lines);
-if (problems.length) invalid(problems.join("; "));
-process.stdout.write("sheet ok\n");
+const problems = check(process.argv[2] || join(process.env.COPILOT_HOME || join(homedir(), ".copilot"), "pstack-models.md"));
+process.stdout.write(problems ? `sheet invalid: ${problems}\n` : "sheet ok\n");
+if (problems) process.exitCode = 1;

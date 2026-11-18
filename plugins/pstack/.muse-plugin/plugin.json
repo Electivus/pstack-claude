@@ -352,23 +352,8 @@
         "id": "session-start",
         "event": "SessionStart",
         "command": [
-          "sh",
-          "hooks/session-start.sh",
-          "muse"
-        ],
-        "timeoutMs": 5000,
-        "statusMessage": "Loading pstack routing"
-      },
-      {
-        "id": "session-start-windows",
-        "event": "SessionStart",
-        "command": [
-          "powershell.exe",
-          "-NoProfile",
-          "-ExecutionPolicy",
-          "Bypass",
-          "-File",
-          "hooks/session-start.ps1",
+          "node",
+          "hooks/session-start.mjs",
           "muse"
         ],
         "timeoutMs": 5000,

@@ -266,7 +266,7 @@ describe("PreToolUse model check for pstack agents", () => {
     });
     const checked = invoke("skills/setup-pstack/scripts/check-sheet.mjs");
     expect({ status: checked.status, out: checked.stdout, err: checked.stderr }).toEqual({ status: 0, out: "sheet ok\n", err: "" });
-    const started = invoke("hooks/session-start.sh", ["copilot"]);
+    const started = invoke("hooks/session-start.mjs", ["copilot"]);
     expect(started.status).toBe(0);
     expect(JSON.parse(started.stdout).additionalContext).toContain("bug-fix: claude-opus-5.5");
     expect(deny(run(agent("off-sheet-model"), env).out)).toContain("`off-sheet-model`");
@@ -366,7 +366,7 @@ describe("PreToolUse vendored script runs", () => {
     "a quoted newline": `node ${find} ${workspace} prompt 'a\nb'`,
     "a quoted tab": `node ${find} ${workspace} prompt 'a\tb'`,
     "a tilde": `node ${find} ${workspace} prompt ~/x`,
-    "a .. script path": `node ${root}/skills/reflect/scripts/../../../hooks/session-start.sh`,
+    "a .. script path": `node ${root}/skills/reflect/scripts/../../../hooks/session-start.mjs`,
     "a .. argument": `node ${find} ${workspace} prompt ../../etc/passwd`,
     "a quoted .. argument": `node ${find} ${workspace} prompt '../x'`,
     "a relative flag that climbs into a sibling": `node ${root}/skills/poteto-mode/scripts/resume.mjs begin --project=../outside`,
@@ -380,7 +380,7 @@ describe("PreToolUse vendored script runs", () => {
     "a flag holding an outside path": `node ${root}/skills/poteto-mode/scripts/resume.mjs begin --project=/etc/x`,
     "a sibling prefix": `node ${root}-evil/skills/reflect/scripts/find-transcript.mjs`,
     "a script outside scripts/": `node ${root}/skills/reflect/SKILL.md`,
-    "a hook script": `sh ${root}/hooks/session-start.sh`,
+    "a hook script": `node ${root}/hooks/session-start.mjs`,
     "the scripts directory itself": `node ${root}/skills/reflect/scripts/`,
     "a relative script path": "node skills/reflect/scripts/find-transcript.mjs",
     "another interpreter": `python3 ${find}`,

@@ -103,8 +103,8 @@ export const RUNTIMES = [
     modelNames: agyModelNamesSection,
     skillPreambles: true,
     manifest: `${PLUGIN}/.antigravity-plugin/plugin.json`,
-    validate: ({ manifest, read, statOf, checkExecutable }) =>
-      validateAgyManifest(manifest, { claude: JSON.parse(read(`${PLUGIN}/.claude-plugin/plugin.json`)), read, statOf, checkExecutable }),
+    validate: ({ manifest, read, statOf }) =>
+      validateAgyManifest(manifest, { claude: JSON.parse(read(`${PLUGIN}/.claude-plugin/plugin.json`)), read, statOf }),
     routing: { file: `${PLUGIN}/hooks/session-start-agy.md`, skill: (name) => name },
   },
   {
@@ -207,19 +207,8 @@ export function stampMuseManifest(text, { skills }) {
 export const SESSION_START_STATUS = "Loading pstack routing";
 
 // Muse's native hook schema takes one command argv per hook, with no
-// per-OS variant, and rejects a `commandWindows`-style field. One argv
-// cannot spawn on every OS: Windows has no `sh` unless Git's usr\bin lands
-// on the harness PATH, and Unix has no powershell.exe. The manifest
-// therefore declares a pair, the shell script and the PowerShell script,
-// and each stands down on the OS the other owns.
-export const MUSE_HOOKS = [
-  { id: "session-start", script: "hooks/session-start.sh", command: ["sh", "hooks/session-start.sh", "muse"] },
-  {
-    id: "session-start-windows",
-    script: "hooks/session-start.ps1",
-    command: ["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "hooks/session-start.ps1", "muse"],
-  },
-];
+// per-OS variant. node spawns the same argv on every OS.
+export const MUSE_HOOKS = [{ id: "session-start", script: "hooks/session-start.mjs", command: ["node", "hooks/session-start.mjs", "muse"] }];
 
 // The Muse build is a native Muse plugin bundle: its manifest keeps the
 // Claude Code plugin's name, and every capability path it lists exists in the
@@ -254,9 +243,6 @@ export function validateMuseManifest(manifest, { claude, pathExists }) {
   for (const { id, script } of MUSE_HOOKS) {
     if (!pathExists(`${PLUGIN}/${script}`)) throw new Error(`${at}: SessionStart hook "${id}" runs ${script}, which is not in the plugin`);
   }
-  // The PowerShell hook reads the roles from models.json at runtime, where
-  // sheet.awk has them stamped in.
-  if (!pathExists(`${PLUGIN}/models.json`)) throw new Error(`${at}: hooks/session-start.ps1 reads models.json, which is not in the plugin`);
 }
 
 // The manifests MiniMax Code 0.7.4 looks for in a plugin directory, in the
@@ -642,13 +628,13 @@ export function openCodeModelNamesSection(models) {
   );
 }
 
-const agyScript = "hooks/session-start.sh";
-const agyCommand = `./${agyScript} agy`;
+const agyScript = "hooks/session-start.mjs";
+const agyCommand = `node ./${agyScript} agy`;
 export const AGY_HOOKS = {
   "pstack-routing": { SessionStart: [{ type: "command", command: agyCommand }] },
 };
 
-export function validateAgyManifest(manifest, { claude, read, statOf, checkExecutable = true }) {
+export function validateAgyManifest(manifest, { claude, read, statOf }) {
   const at = `${PLUGIN}/.antigravity-plugin/plugin.json`;
   if (manifest.name !== claude.name) throw new Error(`${at}: name "${manifest.name}" != Claude Code manifest name "${claude.name}"`);
   if (manifest.logo && !statOf(manifest.logo)?.isFile()) throw new Error(`${at}: ${manifest.logo} is not a file in the plugin`);
@@ -656,9 +642,7 @@ export function validateAgyManifest(manifest, { claude, read, statOf, checkExecu
   if (!isDeepStrictEqual(JSON.parse(read(hooksFile)), AGY_HOOKS)) {
     throw new Error(`${hooksFile}: expected pstack-routing.SessionStart to run ${agyCommand}`);
   }
-  const script = statOf(agyScript);
-  if (!script?.isFile()) throw new Error(`${hooksFile}: ${agyScript} is not a file in the plugin`);
-  if (checkExecutable && !(script.mode & 0o111)) throw new Error(`${hooksFile}: ${agyScript} is not executable`);
+  if (!statOf(agyScript)?.isFile()) throw new Error(`${hooksFile}: ${agyScript} is not a file in the plugin`);
 }
 
 export function agyModelNamesSection(models) {
