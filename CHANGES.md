@@ -2,6 +2,10 @@
 
 This file is the release changelog, with one `## <version> - <title>` entry per release, newest first. The Cursor-to-Claude rewrite rules live in [`tools/substitutions.json`](tools/substitutions.json), and the [sync boundary](CONTRIBUTING.md#the-sync-boundary) in `CONTRIBUTING.md` defines how a change to upstream's skill content is declared.
 
+## 0.9.140 - reflect reads subagent transcripts
+
+The **reflect** skill's reviewers read only the session's own transcript, which keeps each subagent's brief and final report but none of the subagent's tool calls. `find-transcript.mjs` now prints each transcript under the session's `<id>/subagents/` directory after the session's own path, subdirectories included, in the order they were last written. Reflect passes those paths to the three reviewers beside the session's path, so a mistake a subagent made and corrected before it reported can become a finding. A session with no subagents, a subagent's own transcript, and a runtime that has no such directory still print one line.
+
 ## 0.9.139 - safer worktree cleanup and resume, playbook checks, and GPT-6.2 defaults
 
 The worktree audit checks ignored files in initialized submodules and compares local branches with the tips advertised by origin. Pi records ownership in each new agent worktree's private Git directory so reusing its path cannot redirect a resumed agent or its cleanup.

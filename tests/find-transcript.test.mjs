@@ -307,6 +307,20 @@ describe("find-transcript", () => {
     expect(miss.stderr).toContain("no transcript");
   });
 
+  test("the CLI follows a session with its subagents' transcripts, in the order they were last written", () => {
+    const dir = tempDir();
+    const session = transcript(dir, "s.jsonl", [meta, user("ship the release")], 300);
+    const late = transcript(dir, "s/subagents/agent-a.jsonl", [meta, user("check the changelog")], 250);
+    const early = transcript(dir, "s/subagents/workflows/w1/agent-b.jsonl", [meta, user("run the tests")], 150);
+    writeFileSync(join(dir, "s/subagents/agent-a.meta.json"), "{}");
+    const nested = transcript(dir, "n/n.jsonl", [meta, user("tag the build")], 100);
+    const nestedChild = transcript(dir, "n/subagents/agent-c.jsonl", [meta, user("read the tags")], 90);
+    const lines = (fragment) => spawnSync("node", [script, dir, fragment], { encoding: "utf8" }).stdout.trim().split("\n");
+    expect(lines("ship the")).toEqual([session, early, late]);
+    expect(lines("tag the build")).toEqual([nested, nestedChild]);
+    expect(lines("check the changelog")).toEqual([late]);
+  });
+
   // node resolves the script's own URL through symlinks but not argv[1]; bun resolves both.
   test.skipIf(noNode)(
     "the CLI runs under node through a symlinked path (skipped without node)",

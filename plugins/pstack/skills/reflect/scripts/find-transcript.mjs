@@ -3,7 +3,9 @@
 //
 //   node find-transcript.mjs <transcripts-dir> <opening-prompt-fragment> [workspace]
 //
-// Prints the newest matching path, or exits 1 with "no transcript". Covers
+// Prints the newest matching path, then the transcripts of that session's
+// subagents in the order they were last written, one per line, or exits 1
+// with "no transcript". Covers
 // Claude Code's three layouts under one per-project directory (flat
 // <id>.jsonl, nested <id>/<id>.jsonl, subagent <id>/subagents/<child>.jsonl)
 // Pi's <iso>_<id>.jsonl under its per-cwd sessions directory, and GitHub
@@ -16,7 +18,7 @@
 // the active branch. A Codex rollout is refused by name rather than read as an
 // empty Claude transcript.
 import { createReadStream, readdirSync, realpathSync, statSync } from "node:fs";
-import { isAbsolute, join } from "node:path";
+import { basename, dirname, isAbsolute, join } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 
@@ -188,6 +190,22 @@ export async function findTranscript(projectsDir, fragment, workspace = process.
   return null;
 }
 
+// Claude Code keeps a session's subagent transcripts under <id>/subagents/,
+// beside a flat <id>.jsonl or around a nested <id>/<id>.jsonl, some of them in
+// a deeper directory. Any other transcript, a subagent's own included, has none.
+export function subagentTranscripts(path) {
+  const id = basename(path, ".jsonl");
+  const session = basename(dirname(path)) === id ? dirname(path) : join(dirname(path), id);
+  try {
+    return candidates(join(session, "subagents"), Infinity)
+      .reverse()
+      .map((candidate) => candidate.path);
+  } catch (error) {
+    rethrowUnlessRemoved(error);
+    return [];
+  }
+}
+
 async function main(argv) {
   const [projectsDir, fragment, workspace] = argv;
   if (!projectsDir || !fragment || argv.length > 3) {
@@ -199,7 +217,7 @@ async function main(argv) {
     console.error(`no transcript under ${projectsDir} opens with ${JSON.stringify(fragment)}`);
     return 1;
   }
-  console.log(path);
+  console.log([path, ...subagentTranscripts(path)].join("\n"));
   return 0;
 }
 

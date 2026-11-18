@@ -172,9 +172,9 @@ const rules = [
     phrase: "It states no diagnosis, verdict, or cause.",
   },
   {
-    source: "#231 reflect adds nothing beside the transcript path",
+    source: "#231 reflect adds nothing beside the transcript paths",
     file: "reflect/SKILL.md",
-    phrase: "Add nothing beside a transcript path",
+    phrase: "Add nothing beside the transcript paths",
   },
   {
     source: "backnotprop/pstack#14 an outside rule nobody can check is held, not deleted",
