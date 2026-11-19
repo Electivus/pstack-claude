@@ -61,6 +61,12 @@ jobs:
           bun-version: "1.4.4"
       - name: Install dependencies
         run: bun install --frozen-lockfile
+      # The VS Code Local test launches powershell.exe, as VS Code does. The
+      # runner's first Windows PowerShell launch takes from 2.5 s to over 10 s,
+      # so it is paid here and the 10 s timeout still catches a slow hook.
+      - name: Warm up Windows PowerShell
+        shell: powershell
+        run: exit 0
       - name: Test Windows session hooks
         run: bun test --timeout 10000 tests/session-hook-windows.test.mjs
         env:
