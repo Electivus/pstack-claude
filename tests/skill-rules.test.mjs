@@ -74,7 +74,7 @@ const rules = [
   {
     source: "#387 desktop app plan tool is named",
     file: "poteto-mode/SKILL.md",
-    phrase: "In the Claude desktop app, `mcp__ccd_turn__update_plan` asks for items of about seven words.",
+    phrase: "In the Claude desktop app, only the main conversation calls `mcp__ccd_turn__update_plan`",
   },
   {
     source: "#387 desktop app keeps the verbatim checklist",
