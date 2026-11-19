@@ -74,7 +74,13 @@ const rules = [
   {
     source: "#387 desktop app plan tool is named",
     file: "poteto-mode/SKILL.md",
-    phrase: "In the Claude desktop app, `mcp__ccd_turn__update_plan` asks for items of about seven words.",
+    phrase:
+      "In the Claude desktop app, only the main conversation calls `mcp__ccd_turn__update_plan`, which asks for items of about seven words.",
+  },
+  {
+    source: "#28 a subagent keeps its own checklist",
+    file: "poteto-mode/SKILL.md",
+    phrase: "A subagent keeps its checklist in its task tool or `todo.md`.",
   },
   {
     source: "#387 desktop app keeps the verbatim checklist",
@@ -200,6 +206,66 @@ const rules = [
     source: "backnotprop/pstack#14 an outside-rule kill needs a refuting citation",
     file: "no-comments/SKILL.md",
     phrase: "unless the report cites a documentation page or source file that refutes the rule",
+  },
+  {
+    source: "#20 every merge request routes to Shipping",
+    file: "poteto-mode/SKILL.md",
+    phrase: "Asked to merge, land, or ship PRs, stacked or independent, including PRs another session wrote",
+  },
+  {
+    source: "#12 parallel delegates get their own scratch directory",
+    file: "poteto-mode/SKILL.md",
+    phrase: "Give each parallel delegate its own scratch subdirectory (`<scratchpad>/<tag>/`) in its brief.",
+  },
+  {
+    source: "#12 parallel delegates keep REPL names apart",
+    file: "poteto-mode/SKILL.md",
+    phrase: "wrap its REPL scripts in a block or prefix its top-level names",
+  },
+  {
+    source: "#29 host-runtime proofs reach the driver skill",
+    file: "poteto-mode/SKILL.md",
+    phrase: "or a change whose proof drives a host app, IDE, or agent runtime",
+  },
+  {
+    source: "#14 trunk CI on the last merge commit",
+    file: "poteto-mode/playbooks/shipping.md",
+    phrase: "Before the reply, wait for trunk CI on the last merge commit",
+  },
+  {
+    source: "#21 CI lint and static checks run before the first push",
+    file: "poteto-mode/playbooks/opening-a-pr.md",
+    phrase: "run the repo's CI lint and static-check commands locally at their pinned versions",
+  },
+  {
+    source: "#21 delegates get the same checks",
+    file: "poteto-mode/playbooks/feature.md",
+    phrase: "success criteria that include the CI lint and static-check commands",
+  },
+  {
+    source: "#22 a deferred follow-up names its owner",
+    file: "poteto-mode/playbooks/opening-a-pr.md",
+    phrase: "Name each follow-up's owner",
+  },
+  {
+    source: "#22 merging alone ships nothing",
+    file: "poteto-mode/playbooks/opening-a-pr.md",
+    phrase: "tell the user in your reply that merging alone ships nothing",
+  },
+  {
+    source: "#33 a negative result needs the host's record or a control run",
+    file: "principle-prove-it-works/SKILL.md",
+    phrase: "needs the host's own record (a log or transcript) or a control run without the change",
+  },
+  {
+    source: "#34 a check-would-catch-it rejection needs a mutation run",
+    file: "no-comments/SKILL.md",
+    phrase: "needs a mutation run that shows that check failing",
+  },
+  {
+    source: "#23 architect probes an external runtime live",
+    file: "architect/SKILL.md",
+    phrase: "probe it live before sketching, through its own run, debug, and log entry points. Label each grounding fact live, code, or inference.",
   },
 ];
 
