@@ -1,3 +1,4 @@
+import { advisoryLine, advisoryOnly } from "./advisory.ts";
 import type * as T from "./types.ts";
 export const renderJson = (verdict: T.WatcherVerdict): string =>
   `${JSON.stringify(verdict)}\n`;
@@ -12,7 +13,9 @@ function ciCell(row: T.PrSnapshot): string {
     case "ci-unreported":
       return "⏳ no checks reported yet";
     case "ci-pending":
-      return `⏳ ${row.ci.pending.length} pending${was}`;
+      return advisoryOnly(row.ci.pending)
+        ? `✅ required green, ${row.ci.pending.length} advisory pending${was}`
+        : `⏳ ${row.ci.pending.length} pending${was}`;
     case "ci-failing":
       return `❌ ${row.ci.failed.length} failed${row.ci.pending.length ? `, ${row.ci.pending.length} pending` : ""}${was}`;
     case "ci-github-rejected":
@@ -164,6 +167,8 @@ export function renderPretty(verdict: T.WatcherVerdict): string {
         return `WAITING: frontier=#${verdict.frontier.number}; no checks have reported on the head commit yet\n`;
       if (verdict.reason.kind === "mergeability-unknown")
         return `WAITING: frontier=#${verdict.frontier.number}; GitHub has not computed mergeability yet\n`;
+      if (verdict.reason.kind === "advisory-pending")
+        return `WAITING: frontier=#${verdict.frontier.number}; ${advisoryLine(verdict.reason.pending)}\n`;
       return verdict.reason.kind === "pending-checks"
         ? `WAITING: frontier=#${verdict.frontier.number}; ${verdict.reason.pending.length} check${verdict.reason.pending.length === 1 ? "" : "s"} pending\n`
         : `WAITING: frontier=#${verdict.frontier.number} is blocker-free; waiting for merge queue (${verdict.reason.unmergedCount} PR${verdict.reason.unmergedCount === 1 ? "" : "s"} unmerged)\n`;
@@ -185,6 +190,8 @@ export function renderPretty(verdict: T.WatcherVerdict): string {
     case "TIMEOUT":
       if (verdict.reason.kind === "pending-checks")
         return "TIMEOUT: checks still pending\n";
+      if (verdict.reason.kind === "advisory-pending")
+        return `TIMEOUT: ${advisoryLine(verdict.reason.pending)}\n`;
       if (verdict.reason.kind === "checks-unreported")
         return "TIMEOUT: no checks reported on the head commit yet\n";
       if (verdict.reason.kind === "mergeability-unknown")

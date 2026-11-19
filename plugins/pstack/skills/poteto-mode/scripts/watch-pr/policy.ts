@@ -1,3 +1,4 @@
+import { isAdvisoryWait, pendingWait } from "./advisory.ts";
 import { landingRevision } from "./landing.ts";
 import {
   ChecksUnavailable,
@@ -281,13 +282,16 @@ function gateReason(
 }
 function waitReason(row: T.PrSnapshot): T.WaitReason | null {
   if (row.kind !== "open") return null;
-  if (row.ci.kind === "ci-pending")
-    return { kind: "pending-checks", pending: row.ci.pending };
+  if (row.ci.kind === "ci-pending") return pendingWait(row.ci.pending);
   if (row.ci.kind === "ci-unreported") return { kind: "checks-unreported" };
   return mergeabilityUnknown(row.facts)
     ? { kind: "mergeability-unknown" }
     : null;
 }
+const blockingWait = (row: T.PrSnapshot): boolean => {
+  const wait = waitReason(row);
+  return wait !== null && !isAdvisoryWait(wait);
+};
 const DEFERRED_WHILE_WAITING: ReadonlySet<T.MergeGateReason> = new Set([
   "draft-pr",
   "review-required",
@@ -299,7 +303,7 @@ function gateBlocker(
 ): T.MergeBlocker | null {
   const reason = gateReason(row, allowDraft);
   return reason === null ||
-    (DEFERRED_WHILE_WAITING.has(reason) && waitReason(row) !== null)
+    (DEFERRED_WHILE_WAITING.has(reason) && blockingWait(row))
     ? null
     : { kind: "merge-gate", pr: row.context, reason };
 }
@@ -380,11 +384,19 @@ export function selectTierMajorStackDecision(
     const blocker = gateBlocker(row, allowDraft);
     if (blocker !== null) return { kind: "blocker", blocker };
   }
+  let advisoryWait: T.WaitingDecision | null = null;
   for (const row of rows) {
     const wait = waitReason(row);
-    if (wait !== null)
-      return { kind: "waiting", frontier: row.context, reason: wait };
+    if (wait === null) continue;
+    const waiting: T.WaitingDecision = {
+      kind: "waiting",
+      frontier: row.context,
+      reason: wait,
+    };
+    if (!isAdvisoryWait(wait)) return waiting;
+    advisoryWait ??= waiting;
   }
+  if (advisoryWait !== null) return advisoryWait;
   const prs = nonEmpty(
     rows
       .map((row) => readyContribution(row, allowDraft))

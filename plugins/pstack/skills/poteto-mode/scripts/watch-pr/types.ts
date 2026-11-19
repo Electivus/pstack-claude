@@ -83,6 +83,8 @@ interface CheckDetails {
   readonly description: string;
   readonly link: string;
   readonly workflow: string;
+  /** Set only when the base branch does not require this check. */
+  readonly advisory?: true;
 }
 export type Check =
   | (CheckDetails & { readonly kind: "passed" })
@@ -287,6 +289,10 @@ export type QueryFailure =
 export type WaitReason =
   | {
       readonly kind: "pending-checks";
+      readonly pending: NonEmpty<PendingCheck>;
+    }
+  | {
+      readonly kind: "advisory-pending";
       readonly pending: NonEmpty<PendingCheck>;
     }
   | { readonly kind: "checks-unreported" }
