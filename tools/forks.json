@@ -104,7 +104,7 @@
     },
     "plugins/pstack/skills/poteto-mode/playbooks/opening-a-pr.md": {
       "kind": "policy",
-      "why": "Requires stopping every live agent that holds a worktree before committing, merging, or deploying from it.",
+      "why": "Requires stopping every live agent that holds a worktree before committing, merging, or deploying from it, an owner for each deferred follow-up in Scope, and a reply that says merging alone ships nothing when users get the change only through a later release or deploy.",
       "since": "0.9.10",
       "upstream": "not-proposed"
     },
