@@ -1,6 +1,7 @@
 ---
 name: thermos
 description: "Launch both thermo-nuclear review subagents in parallel, then synthesize their findings. Use for thermos, double thermo review, or combined bug/security and code-quality branch audits."
+disable-model-invocation: true
 ---
 
 # Thermos
@@ -24,7 +25,7 @@ Run the two thermo review passes as async background subagents in parallel, then
    - `subagent_type: "pstack:thermo-nuclear-code-quality-review-subagent"` for maintainability, structure, file-size growth, spaghetti, abstractions, and codebase-health risks.
 
    Set `model` on both to the `thermos reviewers` line in `pstack-models.md`, or to the default in [Models](#models) if the sheet or that line is missing. Leave `model` unset when the value is `auto` or `inherit-parent`. If the `Agent` tool rejects a slug, use the default and say so. If it rejects the default, use the closest valid slug of the same family from its error message. Pick each subagent's reasoning level for the job, per the Subagents section of the **poteto-mode** skill.
-4. Pass each subagent the same scoped diff/file context and ask it to return prioritized findings with file references and evidence.
+4. Pass each subagent the same scoped diff/file context and the absolute path of its rubric, `../thermo-nuclear-review/SKILL.md` or `../thermo-nuclear-code-quality-review/SKILL.md` from this skill's base directory, and ask it to return prioritized findings with file references and evidence.
 5. After both finish, synthesize the results with findings first, deduplicated across reviewers. Weight overlapping findings more heavily, resolve disagreements with your own judgment, and keep summaries brief.
 
 If individual background summaries are already visible to the user, do not restate them wholesale. Surface the unified verdict, the highest-signal findings, and any remaining uncertainty.

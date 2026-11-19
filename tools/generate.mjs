@@ -32,9 +32,9 @@
 // Also validated: each RUNTIMES row's packaging, through the row's `validate`
 // (tools/runtimes.mjs), and every hooks file, the Claude Code plugin's and the
 // ones each row's manifest names. docs/reference.md's "Slash commands" table
-// must hold one row per public skill (every Agent Skill not marked
-// user-invocable: false); a skill without a row or a row without a skill
-// fails by name.
+// must hold one row per public skill (every Agent Skill but the principle-*
+// leaves); a skill without a row or a row without a skill fails by name. The
+// skills hooks/session-start-context.md names must equal MODEL_ENTRY_SKILLS.
 
 import {
   existsSync,
@@ -169,19 +169,12 @@ export function agentSkills(skillsDir) {
     if (description.length > 1024) {
       throw new Error(`${path}: description exceeds the portable Agent Skills limit of 1024 characters`);
     }
-    // CHANGES 0.9.8: on a skill the flag makes the Skill tool refuse the
-    // invocation outright, which breaks the SessionStart mandate. Upstream
-    // ships it on every skill; the sync derivation strips it.
-    if (front["disable-model-invocation"] === true) {
-      throw new Error(`${path}: disable-model-invocation: true breaks model-initiated entry (CHANGES 0.9.8)`);
+    // The flag makes the Skill tool refuse the skill, so the skills the
+    // routing hooks name for the Skill tool must not carry it (CHANGES 0.9.8).
+    if (MODEL_ENTRY_SKILLS.includes(name) && front["disable-model-invocation"] === true) {
+      throw new Error(`${path}: the routing hooks invoke ${name} with the Skill tool, so it cannot carry disable-model-invocation: true (CHANGES 0.9.8)`);
     }
-    const userInvocable = front["user-invocable"] !== false;
-    // CHANGES 0.9.9: principle leaves are read by path from poteto-mode and
-    // stay out of the slash menu.
-    if (name.startsWith("principle-") && userInvocable) {
-      throw new Error(`${path}: principle leaves carry user-invocable: false (CHANGES 0.9.9)`);
-    }
-    skills.push({ name, description, userInvocable });
+    skills.push({ name, description, userInvocable: front["user-invocable"] !== false });
   }
   return skills;
 }
@@ -200,6 +193,15 @@ export function validatePluginLayout(pluginRoot) {
   // directory instead.
   if (existsSync(join(pluginRoot, "plugin.json"))) {
     throw new Error(`${PLUGIN}/plugin.json exists; Codex then skips the hooks .codex-plugin/plugin.json names (#265)`);
+  }
+  // The routing mandate names skills for the Skill tool, and only
+  // MODEL_ENTRY_SKILLS stay invocable by it.
+  const mandate = join(pluginRoot, "hooks/session-start-context.md");
+  if (existsSync(mandate)) {
+    const named = [...new Set([...readFileSync(mandate, "utf8").matchAll(/`pstack:([a-z0-9-]+)`/g)].map((m) => m[1]))];
+    if (named.join() !== MODEL_ENTRY_SKILLS.join()) {
+      throw new Error(`${PLUGIN}/hooks/session-start-context.md names ${named.join(", ")}, but MODEL_ENTRY_SKILLS in tools/generate.mjs is ${MODEL_ENTRY_SKILLS.join(", ")}; change both together`);
+    }
   }
   // An "agents" list replaces Claude Code's default agents/ directory, so it
   // would drop every agent it fails to name.
@@ -243,11 +245,12 @@ export function validatePluginLayout(pluginRoot) {
   }
 }
 
-// A public skill is any Agent Skill not marked user-invocable: false (the
-// principle-* leaves). Each has a row in the reference slash-command table.
+// A public skill is any Agent Skill but the principle-* leaves, which
+// poteto-mode reads by path. Each has a row in the reference slash-command
+// table.
 export function publicSkills(skillsDir) {
   return agentSkills(skillsDir)
-    .filter((skill) => skill.userInvocable)
+    .filter((skill) => skill.userInvocable && !skill.name.startsWith("principle-"))
     .map(({ name }) => name);
 }
 
@@ -597,12 +600,17 @@ export function loadModels(root = repo) {
 // continuation lines and blank paragraphs.
 const CURSOR_ONLY_KEYS = /^(?:mode|icon|color|reminder|is_background):/;
 
+// The skills the routing hooks tell the model to invoke with the Skill tool:
+// poteto-mode, then each direct entry that session-start-context.md lists.
+// Every other skill keeps upstream's invocation flags, so Claude Code lists
+// it to the model only when upstream does, and poteto-mode reads it by path.
+export const MODEL_ENTRY_SKILLS = ["poteto-mode", "tdd", "architect", "how", "why", "arena", "interrogate"];
+
 // The port's frontmatter for an upstream skill or plugin agent: `name` is the
 // skill's directory or the agent's file name, which is how Claude Code
-// registers it; Cursor-only keys go. Upstream ships
-// disable-model-invocation: true on every skill; the port drops it on public
-// skills and swaps it for user-invocable: false on principle leaves (CHANGES
-// 0.9.8, 0.9.9).
+// registers it; Cursor-only keys go. Upstream's disable-model-invocation: true
+// stays, except on MODEL_ENTRY_SKILLS, where it would make the Skill tool
+// refuse the hook's call (CHANGES 0.9.8).
 function portFrontmatter(file, text) {
   const skill = file.match(/^plugins\/pstack\/skills\/([^/]+)\/SKILL\.md$/)?.[1];
   const name = skill ?? file.match(/^plugins\/pstack\/agents\/([^/]+)\.md$/)?.[1];
@@ -615,9 +623,8 @@ function portFrontmatter(file, text) {
     if (!dropping) kept.push(line.startsWith("name:") ? `name: ${name}` : line);
   }
   const head = kept.join("\n");
-  if (!skill) return head + body;
-  const swap = skill.startsWith("principle-") ? "\nuser-invocable: false\n" : "\n";
-  return head.replace("\ndisable-model-invocation: true\n", swap) + body;
+  if (!MODEL_ENTRY_SKILLS.includes(skill)) return head + body;
+  return head.replace("\ndisable-model-invocation: true\n", "\n") + body;
 }
 
 // The port's derivation of an upstream file, as tools/sync.mjs applies it

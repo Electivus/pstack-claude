@@ -57,8 +57,7 @@ It also copies the four files in `PORTABLE_ASSETS` into the skills-only installa
 The generator rejects missing Markdown links, links outside the skills tree, and instructions to open unreachable files. It checks for stray model names, requires a matching `CHANGES.md` heading, and validates the Codex marketplace and Claude hook paths. It also enforces these rules:
 
 - No `commands/` directory.
-- No `disable-model-invocation` on a skill.
-- Every `principle-*` leaf sets `user-invocable: false`.
+- Skills keep upstream's `disable-model-invocation: true`, except the skills the routing hooks invoke with the Skill tool (`MODEL_ENTRY_SKILLS` in `tools/generate.mjs`). The `pstack:<name>` skills that `hooks/session-start-context.md` names must equal that list.
 - Plugin agents use their namespaced `pstack:<name>` names.
 - The VS Code Local build reads the Claude Code manifest and gets routing from `plugins/pstack/rules/pstack-routing.md`. The rule keeps its `.md` suffix, `applyTo: '**'`, the routing conditions of `hooks/session-start-context.md`, and a 3000-byte budget, and no earlier manifest or `rules` entry shadows it.
 
@@ -109,7 +108,7 @@ uvx zizmor@1.29.0 --persona pedantic --min-severity low --collect all -- .
 ## Things that will fail CI
 
 - **A `plugins/pstack/commands/` directory.** Claude Code renders commands and user-invocable skills in the same slash menu, so a trampoline paired with its skill duplicates every `/pstack:<name>` row ([#22](https://github.com/michael-denyer/pstack-claude/issues/22)). Remove the directory; each skill already serves its own slash command.
-- **`disable-model-invocation` in a skill's frontmatter.** On a skill it makes the Skill tool refuse the invocation outright, which breaks the SessionStart mandate. The `principle-*` leaves use `user-invocable: false` instead.
+- **`disable-model-invocation` on a skill the routing hooks invoke.** The flag makes the Skill tool refuse the invocation outright, which breaks the SessionStart mandate for `poteto-mode` and the direct entries it lists. Every other skill keeps the flag as upstream ships it, so Claude Code leaves its description out of the model's context, and `poteto-mode` reads it by path.
 - **Stale generated output.** The `Generated files current` job runs `bun tools/generate.mjs --check`, which fails naming each generated file to write or orphan to remove. Editing `VERSION` without regenerating, hand-editing a manifest's `version` field, or bumping without a matching `CHANGES.md` heading all land here. The same run validates `hooks/hooks.json`, the Codex hooks file `.codex-plugin/plugin.json` names, and the Copilot hooks file `.github/plugin/plugin.json` names: every `${CLAUDE_PLUGIN_ROOT}` path a command names, or `${COPILOT_PLUGIN_ROOT}` path in the Copilot file, must exist in the plugin.
 - **A change to installed files with no release.** On a pull request, the `Generated files current` job runs `bun tools/check-release.mjs`, which fails when the change edits a shipped path and `VERSION` is not above the base's. The failure names the shipped files that changed and the command that releases them. See [Releasing](#releasing).
 - **An unresolved sync conflict.** `bun tools/generate.mjs` fails on any line under `plugins/pstack` that starts with seven `<`, `|`, `=`, or `>` followed by a space or the line end, and names the file and line. A sync writes the `<`, `=`, and `>` markers for every text conflict. A `|` line comes from a merge run by hand under a `diff3` conflict style.

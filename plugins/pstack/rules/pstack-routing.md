@@ -19,6 +19,8 @@ It routes to the right pstack skill from there. For smaller tasks, such as a con
 
 When the intent is already specific, read that skill directly by its bare name: `tdd`, `architect`, `how`, `why`, `arena`, `interrogate`.
 
+Most pstack skills load only when the user types them, so a skill tool refuses them. When a pstack skill names another one, read `../<name>/SKILL.md` from the naming skill's base directory and follow it.
+
 Before you follow a pstack skill, read `references/vscode-local-tools.md` in the `poteto-mode` skill directory. Resolve every Claude tool, model, path, and built-in skill that a pstack skill names through it. Dispatch pstack's agents with `runSubagent` by bare name, as in `agentName: "poteto-agent"`.
 
 The user's role models are in the `pstack-models-vscode-local` entry of your instructions list, when it has one. Read that file before a skill that dispatches on role models. A `pstack-models.md` that a `CLAUDE.md` names with an `@` line is Claude Code's sheet and does not apply here.

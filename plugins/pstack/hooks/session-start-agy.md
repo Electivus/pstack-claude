@@ -11,6 +11,8 @@ It routes to the right pstack skill from there. For smaller tasks, such as a con
 
 When the intent is already specific, enter that skill directly: `tdd`, `architect`, `how`, `why`, `arena`, `interrogate`.
 
+Most pstack skills load only when the user types them, so a skill tool refuses them. When a pstack skill names another one, read `../<name>/SKILL.md` from the naming skill's base directory and follow it.
+
 Resolve every Claude tool, model, and built-in skill a pstack skill names through the Antigravity mapping in the `poteto-mode` skill directory, `references/agy-tools.md`.
 
 User instructions (`GEMINI.md`, `AGENTS.md`, direct requests) take precedence. Other session-start mandates still apply. Their skill checks run as before, and when a task meets the criteria above they route implementation through poteto-mode.

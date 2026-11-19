@@ -6,6 +6,8 @@ Start with the [README](../README.md) for installation and your first task.
 
 The package includes 67 skill directories: 43 public skills and 24 `principle-*` references. Claude Code uses `/pstack:<name>`, Pi uses `/skill:<name>`, and Muse lists each user-invocable skill as `/<name>`. In Codex, mention a skill with `$<name>`, such as `$poteto-mode`, or pick one from `/skills`.
 
+The skills keep upstream's `disable-model-invocation: true`, so Claude Code and Pi list to the model only `poteto-mode`, the six direct entries the routing hook names (`tdd`, `architect`, `how`, `why`, `arena`, `interrogate`), and the skills upstream leaves unflagged (`setup-pstack` and the cursor-team-kit skills). Every other skill runs when you type it, or when another pstack skill reads it by path.
+
 Find each skill's instructions in the [skills tree](../plugins/pstack/skills/).
 
 | command | use it when |

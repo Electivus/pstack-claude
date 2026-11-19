@@ -11,6 +11,8 @@ It routes to the right pstack skill from there. For smaller tasks, such as a con
 
 When the intent is already specific, enter that skill directly: `pstack:tdd`, `pstack:architect`, `pstack:how`, `pstack:why`, `pstack:arena`, `pstack:interrogate`.
 
+Most pstack skills load only when the user types them, so a skill tool refuses them. When a pstack skill names another one, read `../<name>/SKILL.md` from the naming skill's base directory and follow it.
+
 User instructions (CLAUDE.md, AGENTS.md, direct requests) take precedence. Other session-start mandates, such as superpowers, still apply. Their skill checks run as before, and when a task meets the criteria above they route implementation through poteto-mode.
 </EXTREMELY_IMPORTANT>
 
