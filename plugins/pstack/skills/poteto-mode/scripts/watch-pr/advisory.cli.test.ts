@@ -19,6 +19,7 @@ afterEach(() => {
 interface Protection {
   readonly ruleset: readonly string[] | "fails";
   readonly classic: readonly string[] | "fails";
+  readonly rules?: readonly unknown[];
 }
 
 function watchBlockedPrWithBuildPending(
@@ -57,7 +58,7 @@ if (has('query PullRequestFacts')) {
   value = { data: { repository: { pullRequest: { commits: { nodes: [{ commit: { oid: 'head', statusCheckRollup: { state: 'PENDING' } } }] } } } } };
 } else if (args[0] === 'api' && args[1].startsWith('repos/owner/repo/rules/branches/main')) {
   if (protection.ruleset === 'fails') fail('gh: Forbidden (HTTP 403)');
-  value = [{ type: 'required_status_checks', parameters: { required_status_checks: protection.ruleset.map((context) => ({ context })) } }];
+  value = [{ type: 'required_status_checks', parameters: { required_status_checks: protection.ruleset.map((context) => ({ context })) } }, ...(protection.rules ?? [])];
 } else if (args[0] === 'api' && args[1] === 'repos/owner/repo/branches/main') {
   if (protection.classic === 'fails') fail('gh: Not Found (HTTP 404)');
   value = { name: 'main', protected: true, protection: { required_status_checks: { contexts: protection.classic } } };
@@ -147,6 +148,59 @@ it("still names the advisory set once every required context has reported", () =
     ["--status-only"]
   );
   expect(status.last).toMatchObject({
+    rows: [{ ci: { pending: [{ name: "build", advisory: true }] } }],
+  });
+});
+
+const codeScanning = {
+  type: "code_scanning",
+  parameters: {
+    code_scanning_tools: [
+      {
+        alerts_threshold: "errors",
+        security_alerts_threshold: "high_or_higher",
+        tool: "CodeQL",
+      },
+    ],
+  },
+};
+
+it("waits on a pending check while a ruleset gates on checks it cannot name", () => {
+  for (const rule of [
+    codeScanning,
+    { type: "a_future_rule", parameters: {} },
+  ]) {
+    const protection = { ruleset: ["cla"], classic: [], rules: [rule] };
+    const result = watchBlockedPrWithBuildPending(protection, timedWatch);
+    expect(result.stderr).toBe("");
+    expect(result.last).toMatchObject({
+      kind: "TIMEOUT",
+      exitCode: 5,
+      reason: { kind: "pending-checks", pending: [{ name: "build" }] },
+    });
+    const status = watchBlockedPrWithBuildPending(protection, [
+      "--status-only",
+    ]);
+    expect(status.status).toBe(0);
+    expect(JSON.stringify(status.last)).not.toContain("advisory");
+  }
+});
+
+it("still names the advisory set beside ruleset rules that gate on no check", () => {
+  const rules = [
+    { type: "deletion", parameters: null },
+    { type: "non_fast_forward", parameters: null },
+    { type: "required_linear_history", parameters: null },
+    {
+      type: "pull_request",
+      parameters: { required_approving_review_count: 0 },
+    },
+  ];
+  const result = watchBlockedPrWithBuildPending(
+    { ruleset: ["cla"], classic: [], rules },
+    ["--status-only"]
+  );
+  expect(result.last).toMatchObject({
     rows: [{ ci: { pending: [{ name: "build", advisory: true }] } }],
   });
 });
