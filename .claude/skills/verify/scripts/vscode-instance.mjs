@@ -120,7 +120,8 @@ function clean(instance) {
   }
   const { userDataDir } = paths(instance);
   const evidence = resolve(values.evidence);
-  cpSync(join(userDataDir, "logs"), join(evidence, "logs"), { recursive: true });
+  const logs = join(userDataDir, "logs");
+  if (existsSync(logs)) cpSync(logs, join(evidence, "logs"), { recursive: true });
   const storage = join(userDataDir, "User/workspaceStorage");
   for (const ws of existsSync(storage) ? readdirSync(storage) : []) {
     const debug = join(storage, ws, "GitHub.copilot-chat/debug-logs");

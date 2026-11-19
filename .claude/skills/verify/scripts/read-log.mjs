@@ -97,6 +97,7 @@ function readClaude(path) {
 
 function copilotSessions(since) {
   const root = join(process.env.COPILOT_HOME ?? join(homedir(), ".copilot"), "session-state");
+  if (!existsSync(root)) return [];
   return readdirSync(root)
     .map((id) => join(root, id))
     .filter((dir) => statSync(dir).birthtimeMs >= since && existsSync(join(dir, "events.jsonl")));
@@ -137,6 +138,7 @@ function readCopilot(since) {
 
 function localLogs(since) {
   const storage = join(values["user-data-dir"], "User/workspaceStorage");
+  if (!existsSync(storage)) return [];
   return readdirSync(storage).flatMap((ws) => {
     const logs = join(storage, ws, "GitHub.copilot-chat/debug-logs");
     if (!existsSync(logs)) return [];
