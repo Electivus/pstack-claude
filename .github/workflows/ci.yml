@@ -106,10 +106,14 @@ jobs:
         run: bun install --frozen-lockfile
       # A dry-run sync to the SHA already pinned compares the port with
       # upstream as it stands, and fails on a fork tools/forks.json lacks or
-      # an entry whose path is not forked. bash ignores the exit status of a
+      # an entry whose path is not forked. The token authenticates sync.mjs's
+      # clone of upstream: anonymous clones from a shared runner IP get a 429.
+      # bash ignores the exit status of a
       # process substitution, so jq fills a variable first. Fed straight to
       # the loop, a jq error runs it zero times and the step passes.
       - name: Check every fork from upstream is declared
+        env:
+          PSTACK_SYNC_GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -eo pipefail
           components=$(jq -r '.components | to_entries[] | "\(.key) \(.value.sha)"' tools/upstream.json)
@@ -125,6 +129,8 @@ jobs:
       # Rules are shared by every component, so one run checks them all.
       - name: Check every substitution rule matches upstream at the pins
         if: ${{ !cancelled() }}
+        env:
+          PSTACK_SYNC_GITHUB_TOKEN: ${{ github.token }}
         run: bun tools/sync.mjs --check-rules
       # Annotates rather than fails: generated edits and declared forks are
       # legitimate, but a reviewer should see every upstream skill file a PR

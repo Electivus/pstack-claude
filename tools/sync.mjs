@@ -582,8 +582,25 @@ export function syncComponent({
   return report;
 }
 
+// A runner shares one egress IP with many jobs, and GitHub rate-limits
+// anonymous clones from it. The token travels in git's environment config, so
+// it never appears in argv, a URL, or the clone's own .git/config, and the
+// header applies to github.com only. A partial clone also fetches blobs from
+// the remote on demand, so every git call needs it, not only the clone.
+export function gitEnv(env = process.env) {
+  const token = env.PSTACK_SYNC_GITHUB_TOKEN;
+  if (!token) return env;
+  const basic = Buffer.from(`x-access-token:${token}`).toString("base64");
+  return {
+    ...env,
+    GIT_CONFIG_COUNT: "1",
+    GIT_CONFIG_KEY_0: "http.https://github.com/.extraheader",
+    GIT_CONFIG_VALUE_0: `AUTHORIZATION: basic ${basic}`,
+  };
+}
+
 function git(args) {
-  return execFileSync("git", args, { encoding: "utf8", stdio: ["ignore", "pipe", "inherit"] });
+  return execFileSync("git", args, { encoding: "utf8", env: gitEnv(), stdio: ["ignore", "pipe", "inherit"] });
 }
 
 // Relative to `component`'s localPath, and read at each other component's own pin.

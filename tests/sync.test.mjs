@@ -23,6 +23,7 @@ import {
   changedLines,
   classify,
   denylistHits,
+  gitEnv,
   mergeFile,
   parseForks,
   parseUpstream,
@@ -519,6 +520,30 @@ describe("denylistHits", () => {
     const hits = denylistHits("skills/x/SKILL.md", sentence, RULES.denylist);
     expect(hits).toHaveLength(1);
     expect(hits[0]).toContain(`"${token}"`);
+  });
+});
+
+describe("gitEnv", () => {
+  test("leaves the environment alone when no token is set", () => {
+    const env = { PATH: "/bin" };
+    expect(gitEnv(env)).toBe(env);
+  });
+
+  test("sends the token to github.com as a basic header through git's environment config", () => {
+    const env = gitEnv({ PATH: "/bin", PSTACK_SYNC_GITHUB_TOKEN: "ghs_secret" });
+    expect(env.GIT_CONFIG_COUNT).toBe("1");
+    expect(env.GIT_CONFIG_KEY_0).toBe("http.https://github.com/.extraheader");
+    const [scheme, encoded] = env.GIT_CONFIG_VALUE_0.replace("AUTHORIZATION: ", "").split(" ");
+    expect(scheme).toBe("basic");
+    expect(Buffer.from(encoded, "base64").toString()).toBe("x-access-token:ghs_secret");
+  });
+
+  test("git reads the header from that environment, so no argument carries the token", () => {
+    const env = gitEnv({ PATH: process.env.PATH, HOME: process.env.HOME, PSTACK_SYNC_GITHUB_TOKEN: "ghs_secret" });
+    const value = execFileSync("git", ["config", "--get", "http.https://github.com/.extraheader"], { encoding: "utf8", env });
+    expect(value.trim()).toBe(env.GIT_CONFIG_VALUE_0);
+    const other = spawnSync("git", ["config", "--get-urlmatch", "http.extraheader", "https://example.com/"], { encoding: "utf8", env });
+    expect(other.stdout.trim()).toBe("");
   });
 });
 
