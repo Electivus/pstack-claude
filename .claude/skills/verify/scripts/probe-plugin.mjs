@@ -39,10 +39,13 @@ if (!values["no-wrap"]) {
     const config = JSON.parse(readFileSync(file, "utf8"));
     for (const groups of Object.values(config.hooks ?? {})) {
       for (const hook of groups.flatMap((g) => g.hooks ?? [])) {
-        if (hook.type !== "command" || !hook.command) continue;
-        const b64 = Buffer.from(hook.command).toString("base64");
-        hook.command = `node "${wrapper}" "${log}" ${b64}`;
-        wrapped.push(`hooks/${name}`);
+        if (hook.type !== "command") continue;
+        for (const [field, shell] of [["command", ""], ["powershell", " powershell"]]) {
+          if (!hook[field]) continue;
+          const b64 = Buffer.from(hook[field]).toString("base64");
+          hook[field] = `node "${wrapper}" "${log}" ${b64}${shell}`;
+          wrapped.push(`hooks/${name}`);
+        }
       }
     }
     writeFileSync(file, JSON.stringify(config, null, 2) + "\n");

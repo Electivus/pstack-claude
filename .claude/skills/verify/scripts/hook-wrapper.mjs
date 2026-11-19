@@ -1,16 +1,17 @@
 #!/usr/bin/env node
-// Usage: node hook-wrapper.mjs <log.jsonl> <base64 of the original hook command>
+// Usage: node hook-wrapper.mjs <log.jsonl> <base64 of the original hook command> [powershell]
 import { appendFileSync, readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 
-const [log, encoded] = process.argv.slice(2);
+const [log, encoded, shell] = process.argv.slice(2);
 const command = Buffer.from(encoded, "base64").toString("utf8");
 let stdin = "";
 try {
   stdin = readFileSync(0, "utf8");
 } catch {}
 
-const run = spawnSync(command, { shell: true, input: stdin, encoding: "utf8" });
+const options = { input: stdin, encoding: "utf8" };
+const run = shell === "powershell" ? spawnSync("powershell", ["-NoProfile", "-Command", command], options) : spawnSync(command, { ...options, shell: true });
 const exitCode = run.status ?? 1;
 
 appendFileSync(
