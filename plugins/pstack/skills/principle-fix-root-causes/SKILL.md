@@ -15,6 +15,7 @@ When debugging, fix the fault, not the place where it surfaced. The symptom is w
 - Ask "why" at each step until the answer is a wrong decision in the code, not a consequence of an earlier one.
 - When stuck, instrument. Read the actual error and the actual state. Do not guess.
 - Ask whether the state that triggered the symptom is legitimate. If the system may be in that state, the code that broke on it is the root cause, and handling the state there is the fix. If the state should never exist, a check where it broke hides the bug. Find what produced the state. Guards, retries, swallowed errors, clamped values, and discarded state are the usual ways to hide a bug.
+- When a flaky test exposes a product contract the code breaks, a fix to the test alone must leave a failing or skipped test that names the tracking issue. A green test that stopped asserting the contract hides the defect.
 - When something fails only after a restart, suspect persisted state first: config files, caches, lock files, serialized state.
 - Check for the pattern, not just the instance. Find every place with the same fault and fix them all.
 - If a workaround needs a paragraph-long comment to justify it, the code is wrong. Fix the code, not the comment.

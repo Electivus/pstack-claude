@@ -248,14 +248,14 @@ const rules = [
     phrase: "--json body --jq .body 2>/dev/null",
   },
   {
-    source: "#21 CI lint and static checks run before the first push",
+    source: "#21 every CI job runs before the first push",
     file: "poteto-mode/playbooks/opening-a-pr.md",
-    phrase: "run the repo's CI lint and static-check commands locally at their pinned versions",
+    phrase: "run every CI job's `run:` command locally at its pinned version, tests and builds included",
   },
   {
     source: "#21 delegates get the same checks",
     file: "poteto-mode/playbooks/feature.md",
-    phrase: "success criteria that include the CI lint and static-check commands",
+    phrase: "success criteria that include every CI job's command from **Opening a PR**",
   },
   {
     source: "#22 a deferred follow-up names its owner",
@@ -281,6 +281,76 @@ const rules = [
     source: "#23 architect probes an external runtime live",
     file: "architect/SKILL.md",
     phrase: "probe it live before sketching, through its own run, debug, and log entry points. Label each grounding fact live, code, or inference.",
+  },
+  {
+    source: "#12 an overwritten PR body is restored from its edit history",
+    file: "poteto-mode/SKILL.md",
+    phrase: "To restore an overwritten PR body, read GitHub's `pullRequest.userContentEdits { createdAt diff }`",
+  },
+  {
+    source: "#15 a test-only flake fix keeps the contract",
+    file: "principle-fix-root-causes/SKILL.md",
+    phrase: "a fix to the test alone must leave a failing or skipped test that names the tracking issue",
+  },
+  {
+    source: "#24 explorers list run, debug, and log entry points",
+    file: "how/references/explorer-prompt.md",
+    phrase: "### Run, Debug, and Log Entry Points",
+  },
+  {
+    source: "#25 a probe settles an observable disagreement",
+    file: "arena/SKILL.md",
+    phrase: "When candidates disagree on a fact you can observe, run the smallest probe that settles it",
+  },
+  {
+    source: "#26 only a dispatch failure skips the cross-judge",
+    file: "arena/SKILL.md",
+    phrase: "Only that dispatch failure skips the judge. Convergence, a live probe, or a clear winner never does.",
+  },
+  {
+    source: "#26 convergence waives grafting only",
+    file: "arena/SKILL.md",
+    phrase: "Convergence waives grafting only, not the Phase C judge.",
+  },
+  {
+    source: "#27 candidates report risks and checks",
+    file: "arena/SKILL.md",
+    phrase: "what could break, and how to verify it",
+  },
+  {
+    source: "#27 every candidate's risks and checks reach the synthesis",
+    file: "arena/SKILL.md",
+    phrase: "Merge every candidate's risks and verification checks into the synthesis, separately from the design grafts",
+  },
+  {
+    source: "#31 a file added to a shared directory runs blast-radius",
+    file: "poteto-mode/SKILL.md",
+    phrase: "A change that adds a file to a directory several runtimes or consumers load → the **blast-radius** skill",
+  },
+  {
+    source: "#31 Blast Radius comes from the consumers",
+    file: "poteto-mode/playbooks/opening-a-pr.md",
+    phrase: "Write it from the list of consumers, not from what you tested.",
+  },
+  {
+    source: "#31 blast-radius description names shared directories",
+    file: "blast-radius/SKILL.md",
+    phrase: "a change that adds a file to a directory several runtimes or consumers load, or a brief",
+  },
+  {
+    source: "#32 a repeated wait triggers Attack the Premise",
+    file: "poteto-mode/SKILL.md",
+    phrase: "or a second wait or retry for an external state change (policy, token, cache, propagation) has ended without the change",
+  },
+  {
+    source: "#32 attack-the-premise description covers repeated waits",
+    file: "principle-attack-the-premise/SKILL.md",
+    phrase: "or when a second wait or retry for an external state change (policy, token, cache, propagation) has ended without the change",
+  },
+  {
+    source: "#32 read the state record before waiting again",
+    file: "principle-attack-the-premise/SKILL.md",
+    phrase: "Before you wait again, read the record that shows the current state and when it was last fetched.",
   },
 ];
 
