@@ -8,10 +8,16 @@
 // With no argument it runs every job in LINT_JOBS. A job whose tool is missing
 // fails and names how to install it. Nothing is skipped silently. Exits 0 when
 // every job passes and 1 otherwise.
+//
+// The jobs run in a copy of the files git would check out, the tracked and the
+// unignored ones, as CI's checkout sees them. Linting the working tree itself
+// would also reach ignored files such as nested .claude/worktrees. The copy is
+// a fresh git repository because actionlint locates its project by .git.
 
 import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { isMain } from "./plugin.mjs";
@@ -46,11 +52,56 @@ export const LINT_JOBS = [
   },
 ];
 
+// What a step must declare for the local run to match CI: the command, the
+// directory it runs in, and the environment it sees. Any other step key
+// changes how CI runs the step, so jobCommand refuses it.
+const REPRODUCIBLE_KEYS = new Set(["name", "id", "run", "working-directory", "env", "shell"]);
+
+function reproducibleEnv(env, where) {
+  const entries = Object.entries(env ?? {}).map(([key, value]) => {
+    if (typeof value === "string" && value.includes("${{")) {
+      throw new Error(`ci.yml ${where}: env.${key} uses an expression, which ci-local cannot evaluate`);
+    }
+    return [key, String(value)];
+  });
+  return Object.fromEntries(entries);
+}
+
 export function jobCommand(workflow, { job, step }) {
   const definition = workflow.jobs[job];
   const found = definition?.steps.find(({ name }) => name === step);
   if (!found?.run) throw new Error(`ci.yml has no step "${step}" with a run in job "${job}"`);
-  return { run: found.run, cwd: definition.defaults?.run?.["working-directory"] ?? "." };
+  const where = `job "${job}" step "${step}"`;
+  for (const key of Object.keys(found)) {
+    if (!REPRODUCIBLE_KEYS.has(key)) throw new Error(`ci.yml ${where}: ci-local cannot reproduce "${key}"`);
+  }
+  const defaults = definition.defaults?.run ?? {};
+  const shell = found.shell ?? defaults.shell ?? "bash";
+  if (shell !== "bash") throw new Error(`ci.yml ${where}: ci-local runs bash, not shell "${shell}"`);
+  return {
+    run: found.run,
+    cwd: found["working-directory"] ?? defaults["working-directory"] ?? ".",
+    env: { ...reproducibleEnv(definition.env, `job "${job}"`), ...reproducibleEnv(found.env, where) },
+  };
+}
+
+export function exportTracked(root = REPO_ROOT) {
+  const listed = spawnSync("git", ["-C", root, "ls-files", "-z", "--cached", "--others", "--exclude-standard"], {
+    encoding: "utf8",
+    maxBuffer: 64 * 1024 * 1024,
+  });
+  if (listed.status !== 0) throw new Error(`git ls-files failed in ${root}: ${listed.stderr}`);
+  const out = mkdtempSync(join(tmpdir(), "ci-local-"));
+  spawnSync("git", ["init", "-q", out], { stdio: "ignore" });
+  for (const path of new Set(listed.stdout.split("\0").filter(Boolean))) {
+    try {
+      mkdirSync(dirname(join(out, path)), { recursive: true });
+      cpSync(join(root, path), join(out, path), { verbatimSymlinks: true });
+    } catch (error) {
+      if (error.code !== "ENOENT") throw error;
+    }
+  }
+  return out;
 }
 
 export function missingTools(needs, which = Bun.which) {
@@ -71,11 +122,11 @@ export function runJob(workflow, row, root = REPO_ROOT) {
     console.error(`${row.job}: Docker is installed but not running. Start it, then rerun.`);
     return false;
   }
-  const { run, cwd } = jobCommand(workflow, row);
+  const { run, cwd, env } = jobCommand(workflow, row);
   const result = spawnSync("bash", ["-c", `set -eo pipefail\n${run}`], {
     cwd: join(root, cwd),
     stdio: "inherit",
-    env: { ...process.env, GITHUB_WORKSPACE: root },
+    env: { ...process.env, ...env, GITHUB_WORKSPACE: root },
   });
   return result.status === 0;
 }
@@ -89,9 +140,14 @@ function main(names) {
   }
   const workflow = Bun.YAML.parse(readFileSync(WORKFLOW, "utf8"));
   const failed = [];
-  for (const row of rows) {
-    console.log(`\n== ${row.job}: ${row.step}`);
-    if (!runJob(workflow, row)) failed.push(row.job);
+  const root = exportTracked();
+  try {
+    for (const row of rows) {
+      console.log(`\n== ${row.job}: ${row.step}`);
+      if (!runJob(workflow, row, root)) failed.push(row.job);
+    }
+  } finally {
+    rmSync(root, { recursive: true, force: true });
   }
   console.log(failed.length === 0 ? "\nAll CI lint jobs pass." : `\nFailed: ${failed.join(", ")}.`);
   return failed.length === 0 ? 0 : 1;

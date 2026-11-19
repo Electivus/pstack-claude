@@ -1,7 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import { readFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
-import { jobCommand, LINT_JOBS, missingTools, runJob, WORKFLOW } from "../tools/ci-local.mjs";
+import { exportTracked, jobCommand, LINT_JOBS, missingTools, runJob, WORKFLOW } from "../tools/ci-local.mjs";
 
 const workflow = Bun.YAML.parse(readFileSync(WORKFLOW, "utf8"));
 const command = (job) => jobCommand(workflow, LINT_JOBS.find((row) => row.job === job));
@@ -18,6 +21,7 @@ describe("LINT_JOBS", () => {
     expect(command("scripts")).toEqual({
       run: expect.stringMatching(/prettier@\d+\.\d+\.\d+ --check/),
       cwd: "plugins/pstack/skills/poteto-mode/scripts",
+      env: {},
     });
   });
 
@@ -27,6 +31,54 @@ describe("LINT_JOBS", () => {
       for (const tool of ["docker", "npx", "bunx", "shellcheck"]) {
         if (new RegExp(`(^|\\s)${tool}\\s`).test(run)) expect(row.needs).toHaveProperty(tool);
       }
+    }
+  });
+});
+
+describe("jobCommand step fields", () => {
+  const row = { job: "j", step: "s" };
+  const make = (step, job = {}) => ({ jobs: { j: { ...job, steps: [{ name: "s", run: "x", ...step }] } } });
+
+  test("honors a step working-directory over the job default", () => {
+    const defaults = { defaults: { run: { "working-directory": "a" } } };
+    expect(jobCommand(make({ "working-directory": "docs" }, defaults), row).cwd).toBe("docs");
+    expect(jobCommand(make({}, defaults), row).cwd).toBe("a");
+  });
+
+  test("merges job and step env, the step winning", () => {
+    const workflow = make({ env: { B: "step", C: 3 } }, { env: { A: "job", B: "job" } });
+    expect(jobCommand(workflow, row).env).toEqual({ A: "job", B: "step", C: "3" });
+  });
+
+  test("accepts bash and refuses what it cannot reproduce, naming job and field", () => {
+    expect(jobCommand(make({ shell: "bash" }), row).run).toBe("x");
+    expect(() => jobCommand(make({ shell: "pwsh" }), row)).toThrow(/job "j".*step "s".*shell/);
+    expect(() => jobCommand(make({}, { defaults: { run: { shell: "python" } } }), row)).toThrow(/job "j".*shell/);
+    expect(() => jobCommand(make({ env: { A: "${{ secrets.T }}" } }), row)).toThrow(/job "j".*step "s".*env\.A/);
+    expect(() => jobCommand(make({ if: "always()" }), row)).toThrow(/job "j".*step "s".*if/);
+  });
+});
+
+describe("exportTracked", () => {
+  test("copies tracked and unignored files and leaves ignored and deleted ones", () => {
+    const repo = mkdtempSync(join(tmpdir(), "ci-local-repo-"));
+    const git = (...args) => execFileSync("git", ["-C", repo, ...args], { encoding: "utf8" });
+    git("init", "-q");
+    writeFileSync(join(repo, ".gitignore"), "ignored/\n");
+    mkdirSync(join(repo, "ignored"));
+    writeFileSync(join(repo, "ignored", "a.sh"), "");
+    writeFileSync(join(repo, "kept.sh"), "");
+    writeFileSync(join(repo, "gone.sh"), "");
+    git("add", "-A", "-f", ".gitignore", "kept.sh", "gone.sh");
+    rmSync(join(repo, "gone.sh"));
+    writeFileSync(join(repo, "new.md"), "");
+    const out = exportTracked(repo);
+    try {
+      expect(readdirSync(out).filter((name) => name !== ".git").sort()).toEqual([".gitignore", "kept.sh", "new.md"]);
+      expect(readdirSync(out)).toContain(".git");
+    } finally {
+      rmSync(out, { recursive: true });
+      rmSync(repo, { recursive: true });
     }
   });
 });
