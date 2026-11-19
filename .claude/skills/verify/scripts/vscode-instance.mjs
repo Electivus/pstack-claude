@@ -50,7 +50,7 @@ function paths(instance) {
 }
 
 function mainPids(userDataDir) {
-  const run = spawnSync("pgrep", ["-f", "--", `--user-data-dir ${userDataDir}( |$)`], { encoding: "utf8" });
+  const run = spawnSync("pgrep", ["-f", "--", `--user-data-dir ${userDataDir.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}( |$)`], { encoding: "utf8" });
   return run.stdout.split("\n").filter(Boolean).map(Number);
 }
 
