@@ -541,9 +541,13 @@ export function copilotModelNamesSection(models) {
     "After it writes the sheet, it runs its `check-sheet.mjs` script, which applies the hook's checks.\n\n" +
     "Run `setup-pstack`, and the parent session that orchestrates a panel, on a model at least as strong as " +
     "gpt-5.4-mini or a Sonnet-class Claude model. On a Haiku-class model, setup picked models the user never " +
-    "chose in about half of the smoke runs. In a VS Code Copilot session, Claude Haiku 4.5 could not start a " +
-    "session with pstack loaded, because the static system messages and tool definitions exceeded its context " +
-    "budget (observed on 2026-11-18). Do not pick it as the session model there."
+    "chose in about half of the smoke runs. In a VS Code Copilot session on VS Code Insiders 1.148.0 on 2026-11-19, " +
+    "Claude Haiku 4.5 started with and without pstack. With `COPILOT_HOME` set to an empty folder, the session " +
+    "carried 81 tools, and its first request used 38,817 input tokens without pstack and 41,714 with it, so pstack " +
+    "adds about 2,900 tokens. Sessions that day with the test machine's own Copilot home, which loads a user MCP " +
+    "server, carried 310 tools, and their static context filled 82% of the model's budget without pstack and 83% " +
+    "with it. That 82% measures that machine's setup, not VS Code's own share. On 1.147.0 on 2026-11-18, one " +
+    "session with pstack loaded did not start, and no session without pstack was tried then."
   );
 }
 
