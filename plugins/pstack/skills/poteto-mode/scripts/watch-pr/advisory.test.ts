@@ -2,6 +2,7 @@ import { describe, expect, it } from "bun:test";
 import {
   advisoryReader,
   parseRequiredPage,
+  parseRulesetContexts,
   readRequiredNames,
 } from "./advisory.ts";
 import { WatchDeadline } from "./deadline.ts";
@@ -91,8 +92,12 @@ describe("advisoryReader", () => {
     });
   });
 
-  it("treats every pending check as required when requiredness is unknown", async () => {
-    for (const lookup of [async () => null, async () => new Set<string>()]) {
+  it("treats every pending check as required when requiredness is unknown or names a check gh pr checks did not list", async () => {
+    for (const lookup of [
+      async () => null,
+      async () => new Set<string>(),
+      async () => new Set(["build"]),
+    ]) {
       const reader = advisoryReader(
         fakeReader({
           fastPath: { kind: "checks", checks: [pendingCheck("codex")] },
@@ -125,6 +130,19 @@ describe("advisoryReader", () => {
   });
 });
 
+const rulesetRule = (contexts: readonly string[]) => ({
+  type: "required_status_checks",
+  parameters: {
+    required_status_checks: contexts.map((context) => ({ context })),
+  },
+});
+const protection =
+  (rulesets: readonly string[], classic: readonly string[]) =>
+  async (path: string) =>
+    path.startsWith("rules/branches/main?")
+      ? [rulesetRule(rulesets)]
+      : { protection: { required_status_checks: { contexts: classic } } };
+
 describe("readRequiredNames", () => {
   const node = (name: string, isRequired: boolean) => ({
     __typename: "CheckRun",
@@ -135,6 +153,7 @@ describe("readRequiredNames", () => {
     data: {
       repository: {
         pullRequest: {
+          baseRefName: "main",
           commits: {
             nodes: [
               {
@@ -173,7 +192,12 @@ describe("readRequiredNames", () => {
           null
         )
       )
-    ).toEqual({ required: ["build", "legacy"], endCursor: null });
+    ).toEqual({
+      base: "main",
+      required: ["build", "legacy"],
+      reported: ["build", "codex", "legacy"],
+      endCursor: null,
+    });
   });
 
   it("pages through every context", async () => {
@@ -182,10 +206,13 @@ describe("readRequiredNames", () => {
       page([node("b", true), node("c", false)], null),
     ];
     const cursors: (string | null)[] = [];
-    const names = await readRequiredNames(async (after) => {
-      cursors.push(after);
-      return pages[cursors.length - 1];
-    });
+    const names = await readRequiredNames(
+      async (after) => {
+        cursors.push(after);
+        return pages[cursors.length - 1];
+      },
+      protection([], [])
+    );
     expect([...(names ?? [])].sort()).toEqual(["a", "b"]);
     expect(cursors).toEqual([null, "c1"]);
   });
@@ -195,12 +222,53 @@ describe("readRequiredNames", () => {
       data: {
         repository: {
           pullRequest: {
+            baseRefName: "main",
             commits: { nodes: [{ commit: { statusCheckRollup: null } }] },
           },
         },
       },
     };
-    expect(await readRequiredNames(async () => empty)).toBeNull();
+    expect(
+      await readRequiredNames(async () => empty, protection([], []))
+    ).toBeNull();
+  });
+
+  it("adds the contexts rulesets and classic protection require", async () => {
+    const rollup = page(
+      [node("build", true), node("gate", false), node("lint", false)],
+      null
+    );
+    const names = await readRequiredNames(
+      async () => rollup,
+      protection(["gate"], ["lint"])
+    );
+    expect([...(names ?? [])].sort()).toEqual(["build", "gate", "lint"]);
+  });
+
+  it("returns null while a required context has not reported", async () => {
+    const rollup = page([node("build", true), node("codex", false)], null);
+    for (const [rulesets, classic] of [
+      [["gate"], []],
+      [[], ["gate"]],
+    ])
+      expect(
+        await readRequiredNames(
+          async () => rollup,
+          protection(rulesets, classic)
+        )
+      ).toBeNull();
+  });
+
+  it("reads only required_status_checks rules and refuses a full page", () => {
+    expect(
+      parseRulesetContexts([
+        { type: "deletion" },
+        rulesetRule(["gate", "lint"]),
+      ])
+    ).toEqual(["gate", "lint"]);
+    expect(() =>
+      parseRulesetContexts(Array.from({ length: 100 }, () => rulesetRule([])))
+    ).toThrow("may be truncated");
   });
 });
 

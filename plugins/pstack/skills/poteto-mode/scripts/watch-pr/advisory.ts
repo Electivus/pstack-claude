@@ -1,12 +1,13 @@
 import type { WatchDeadline } from "./deadline.ts";
 import { WatcherQueryError, graphqlArgs, runJson } from "./github.ts";
-import { object } from "./landing.ts";
+import { object, text } from "./landing.ts";
 import type * as T from "./types.ts";
 import { nonEmpty } from "./types.ts";
 
 export const REQUIRED_CHECKS_QUERY = `query PrRequiredChecks($owner: String!, $repo: String!, $pr: Int!, $after: String) {
   repository(owner: $owner, name: $repo) {
     pullRequest(number: $pr) {
+      baseRefName
       commits(last: 1) {
         nodes {
           commit {
@@ -31,13 +32,17 @@ export type RequiredNames = (
   context: T.PrContext
 ) => Promise<ReadonlySet<string> | null>;
 
-interface RequiredPage {
+const RULES_PAGE = 100;
+
+interface RollupPage {
+  readonly base: string;
   readonly required: readonly string[];
+  readonly reported: readonly string[];
   readonly endCursor: string | null;
 }
 
 /** A head commit with no rollup has no required checks to name. */
-export function parseRequiredPage(response: unknown): RequiredPage | null {
+export function parseRequiredPage(response: unknown): RollupPage | null {
   const pullRequest = object(
     object(
       object(object(response, "response").data, "data").repository,
@@ -45,6 +50,7 @@ export function parseRequiredPage(response: unknown): RequiredPage | null {
     ).pullRequest,
     "pullRequest"
   );
+  const base = text(pullRequest.baseRefName, "baseRefName");
   const commits = object(pullRequest.commits, "commits").nodes;
   if (!Array.isArray(commits) || commits.length === 0) return null;
   const commit = object(
@@ -59,15 +65,19 @@ export function parseRequiredPage(response: unknown): RequiredPage | null {
   const nodes = contexts.nodes;
   if (!Array.isArray(nodes)) throw missing("contexts.nodes");
   const required: string[] = [];
+  const reported: string[] = [];
   for (const raw of nodes) {
     const node = object(raw, "context node");
     const name = node.__typename === "CheckRun" ? node.name : node.context;
-    if (node.isRequired === true && typeof name === "string")
-      required.push(name);
+    if (typeof name !== "string") continue;
+    reported.push(name);
+    if (node.isRequired === true) required.push(name);
   }
   const page = object(contexts.pageInfo, "pageInfo");
   return {
+    base,
     required,
+    reported,
     endCursor:
       page.hasNextPage === true && typeof page.endCursor === "string"
         ? page.endCursor
@@ -83,21 +93,58 @@ function missing(path: string): WatcherQueryError {
   });
 }
 
+export function parseRulesetContexts(response: unknown): string[] {
+  if (!Array.isArray(response)) throw missing("rules");
+  if (response.length >= RULES_PAGE)
+    throw new WatcherQueryError({
+      kind: "missing-field",
+      retryable: true,
+      detail: `rules page holds ${RULES_PAGE} entries and may be truncated`,
+    });
+  return response.flatMap((raw) => {
+    const rule = object(raw, "rule");
+    if (rule.type !== "required_status_checks") return [];
+    const checks = object(
+      rule.parameters,
+      "rule.parameters"
+    ).required_status_checks;
+    if (!Array.isArray(checks)) throw missing("required_status_checks");
+    return checks.map((check) =>
+      text(object(check, "required status check").context, "context")
+    );
+  });
+}
+
 /**
- * The names GitHub requires for this PR, or null when none are required or the
- * head has no rollup. Null cannot tell "no branch protection" from "unreadable",
- * so callers treat it as "every check is required".
+ * Contexts classic branch protection requires, read from the branch endpoint.
+ * The protection endpoint answers 404 to a reader without admin rights.
  */
+export function parseClassicContexts(response: unknown): string[] {
+  const contexts = object(
+    object(object(response, "branch").protection, "protection")
+      .required_status_checks,
+    "required_status_checks"
+  ).contexts;
+  if (!Array.isArray(contexts))
+    throw missing("required_status_checks.contexts");
+  return contexts.map((context) => text(context, "context"));
+}
+
 export async function readRequiredNames(
-  readPage: (after: string | null) => Promise<unknown>
+  readPage: (after: string | null) => Promise<unknown>,
+  readRepo: (path: string) => Promise<unknown>
 ): Promise<ReadonlySet<string> | null> {
-  const names = new Set<string>();
+  const required = new Set<string>();
+  const reported = new Set<string>();
   const cursors = new Set<string>();
+  let base = "";
   let after: string | null = null;
   do {
     const page = parseRequiredPage(await readPage(after));
     if (page === null) return null;
-    for (const name of page.required) names.add(name);
+    base = page.base;
+    for (const name of page.required) required.add(name);
+    for (const name of page.reported) reported.add(name);
     after = page.endCursor;
     if (after !== null) {
       if (cursors.has(after))
@@ -109,17 +156,43 @@ export async function readRequiredNames(
       cursors.add(after);
     }
   } while (after !== null);
-  return names.size === 0 ? null : names;
+  const branch = encodeURIComponent(base);
+  const [rulesets, classic] = await Promise.all([
+    readRepo(`rules/branches/${branch}?per_page=${RULES_PAGE}`).then(
+      parseRulesetContexts
+    ),
+    readRepo(`branches/${branch}`).then(parseClassicContexts),
+  ]);
+  for (const name of [...rulesets, ...classic]) required.add(name);
+  for (const name of required) if (!reported.has(name)) return null;
+  return required.size === 0 ? null : required;
 }
 
 export function ghRequiredNames(deadline: WatchDeadline): RequiredNames {
   return (context) =>
-    readRequiredNames((after) => {
-      const argv = graphqlArgs(REQUIRED_CHECKS_QUERY, context);
-      if (after !== null) argv.push("-f", `after=${after}`);
-      return runJson(argv, deadline);
-    });
+    readRequiredNames(
+      (after) => {
+        const argv = graphqlArgs(REQUIRED_CHECKS_QUERY, context);
+        if (after !== null) argv.push("-f", `after=${after}`);
+        return runJson(argv, deadline);
+      },
+      (path) =>
+        runJson(
+          ["gh", "api", `repos/${context.owner}/${context.repo}/${path}`],
+          deadline
+        )
+    );
 }
+
+const listedOnly =
+  (lookup: RequiredNames, checks: readonly T.Check[]): RequiredNames =>
+  async (context) => {
+    const names = await lookup(context);
+    return names !== null &&
+      [...names].every((name) => checks.some((check) => check.name === name))
+      ? names
+      : null;
+  };
 
 async function markAdvisory(
   checks: readonly T.Check[],
@@ -162,7 +235,11 @@ export function advisoryReader(
       return fast.kind === "checks"
         ? {
             kind: "checks",
-            checks: await markAdvisory(fast.checks, context, lookup),
+            checks: await markAdvisory(
+              fast.checks,
+              context,
+              listedOnly(lookup, fast.checks)
+            ),
           }
         : fast;
     },
