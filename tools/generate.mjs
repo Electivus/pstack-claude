@@ -749,7 +749,7 @@ export function strayModelSlugs(file, text, models) {
 
 // The hook handler shapes Claude Code documents, one schema per `type`
 // (https://code.claude.com/docs/en/hooks, "Hook handler fields"), plus Codex's
-// commandWindows and Copilot's powershell on a command hook. A key no type
+// commandWindows and the powershell that Copilot and VS Code run on Windows. A key no type
 // lists is a fault, so a misspelt override cannot be dropped without notice.
 const HOOK_FIELDS = {
   if: Type.Optional(Type.String()),
@@ -822,9 +822,9 @@ export function validateHooks(hooksJson, { statOf, file = "hooks/hooks.json", ro
         continue;
       }
       if (hook.type !== "command") continue;
-      // Copilot runs powershell on Windows in place of command, and PowerShell
-      // reads the root from $env. `exit 0`, a PreToolUse hook that leaves each
-      // call to Copilot, is the one override that names no plugin file.
+      // Copilot and VS Code run powershell on Windows in place of command, and
+      // PowerShell reads the root from $env. `exit 0`, which leaves the event
+      // to the runtime, is the one override that names no plugin file.
       const commands = [
         [hook.command, `\\$\\{${root}\\}/`],
         [hook.commandWindows, `\\$\\{${root}\\}/`],
