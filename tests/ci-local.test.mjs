@@ -142,7 +142,8 @@ describe("exportTracked", () => {
       expect(() => exportTracked(repo)).toThrow();
       expect(readdirSync(temp)).toEqual([]);
     } finally {
-      process.env.TMPDIR = previous;
+      if (previous === undefined) delete process.env.TMPDIR;
+      else process.env.TMPDIR = previous;
       rmSync(scratch, { recursive: true });
     }
   });
