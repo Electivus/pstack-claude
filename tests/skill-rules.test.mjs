@@ -240,7 +240,7 @@ const rules = [
   {
     source: "#8 ship-pr inspect compares the recorded closing issues",
     file: "poteto-mode/playbooks/shipping.md",
-    phrase: "do not merge on `refused`",
+    phrase: "merge only on `kind: inspected`",
   },
   {
     source: "#9 a body read for write-back drops gh's stderr hint",

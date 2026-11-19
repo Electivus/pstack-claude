@@ -383,6 +383,14 @@ describe("closing issues and hint lines", () => {
     );
   });
 
+  it("rejects a repo-qualified entry with no # before the number", () => {
+    for (const bad of [
+      "Electivus/pstack-claude89",
+      "Electivus/pstack-claude8,9",
+    ])
+      expect(() => parseIntendedIssues(bad, context)).toThrow("--closes entry");
+  });
+
   it("checks closing issues only when an intended set is given", () => {
     expect(refusals(content, undefined)).toEqual([]);
     expect(refusals(content, ["owner/repo#8"])).toEqual([]);

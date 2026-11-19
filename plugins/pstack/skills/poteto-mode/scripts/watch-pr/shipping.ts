@@ -100,7 +100,7 @@ export function parseIntendedIssues(
     .map((item) => item.trim())
     .filter((item) => item !== "")
     .map((item) => {
-      const match = /^(?:([\w.-]+\/[\w.-]+))?#?(\d+)$/.exec(item);
+      const match = /^(?:([\w.-]+\/[\w.-]+)#|#)?(\d+)$/.exec(item);
       if (!match?.[2])
         throw new Error(
           `--closes entry ${item} is not 12, #12, or owner/repo#12`
