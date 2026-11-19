@@ -21,10 +21,10 @@ interface Protection {
   readonly classic: readonly string[] | "fails";
 }
 
-// Replays a python/cpython PR mid-CI: "cla" is required and green, "build" is
-// pending and not required, and the base branch also requires "gate", a job
-// GitHub creates only after the build finishes. The PR is BLOCKED meanwhile.
-function watch(protection: Protection, extra: readonly string[]) {
+function watchBlockedPrWithBuildPending(
+  protection: Protection,
+  extra: readonly string[]
+) {
   const dir = mkdtempSync(join(tmpdir(), "watch-advisory-"));
   directories.push(dir);
   const bin = join(dir, "bin");
@@ -98,7 +98,7 @@ it("waits on a pending check while a required context has not reported", () => {
     { ruleset: [], classic: ["cla", "gate"] },
     { ruleset: ["gate"], classic: [] },
   ]) {
-    const result = watch(protection, timedWatch);
+    const result = watchBlockedPrWithBuildPending(protection, timedWatch);
     expect(result.stderr).toBe("");
     expect(result.last).toMatchObject({
       kind: "TIMEOUT",
@@ -110,9 +110,10 @@ it("waits on a pending check while a required context has not reported", () => {
 });
 
 it("does not label a check advisory while a required context has not reported", () => {
-  const result = watch({ ruleset: [], classic: ["cla", "gate"] }, [
-    "--status-only",
-  ]);
+  const result = watchBlockedPrWithBuildPending(
+    { ruleset: [], classic: ["cla", "gate"] },
+    ["--status-only"]
+  );
   expect(result.status).toBe(0);
   expect(JSON.stringify(result.last)).not.toContain("advisory");
 });
@@ -122,7 +123,7 @@ it("counts every pending check as required when the required contexts cannot be 
     { ruleset: "fails", classic: [] },
     { ruleset: [], classic: "fails" },
   ] as const) {
-    const result = watch(protection, timedWatch);
+    const result = watchBlockedPrWithBuildPending(protection, timedWatch);
     expect(result.last).toMatchObject({
       kind: "TIMEOUT",
       exitCode: 5,
@@ -132,13 +133,19 @@ it("counts every pending check as required when the required contexts cannot be 
 });
 
 it("still names the advisory set once every required context has reported", () => {
-  const result = watch({ ruleset: [], classic: ["cla"] }, timedWatch);
+  const result = watchBlockedPrWithBuildPending(
+    { ruleset: [], classic: ["cla"] },
+    timedWatch
+  );
   expect(result.last).toMatchObject({
     kind: "BLOCKER",
     exitCode: 6,
     blocker: { kind: "merge-gate", reason: "merge-blocked" },
   });
-  const status = watch({ ruleset: [], classic: ["cla"] }, ["--status-only"]);
+  const status = watchBlockedPrWithBuildPending(
+    { ruleset: [], classic: ["cla"] },
+    ["--status-only"]
+  );
   expect(status.last).toMatchObject({
     rows: [{ ci: { pending: [{ name: "build", advisory: true }] } }],
   });
