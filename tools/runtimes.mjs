@@ -23,6 +23,9 @@ import { code, codeList, PLUGIN, SKILLS } from "./plugin.mjs";
 // Claude Code manifest and stamps no preambles; its one pointer is in
 // poteto-mode's Platform Adaptation section, as Pi's is.
 // Antigravity keys its hooks by group name instead of the shared hooks schema.
+// A `routing` runtime cannot run the Claude Code SessionStart hook, so it
+// carries its own copy of the mandate in `file`. The generator stamps that
+// copy's routing block from the mandate, with each skill named by `skill`.
 export const RUNTIMES = [
   {
     name: "Codex",
@@ -68,6 +71,7 @@ export const RUNTIMES = [
     // or hooks file of its own.
     manifest: `${PLUGIN}/.claude-plugin/plugin.json`,
     validate: validateVSCodeLocalPackage,
+    routing: { file: `${PLUGIN}/rules/pstack-routing.md`, skill: (name) => name },
   },
   {
     name: "Muse",
@@ -80,6 +84,7 @@ export const RUNTIMES = [
     validate: ({ manifest, read, pathExists }) =>
       validateMuseManifest(manifest, { claude: JSON.parse(read(`${PLUGIN}/.claude-plugin/plugin.json`)), pathExists }),
     stampManifest: stampMuseManifest,
+    routing: { file: `${PLUGIN}/hooks/session-start-muse.md`, skill: (name) => `plugin:pstack:${name}` },
   },
   {
     name: "MiniMax Code",
@@ -90,6 +95,7 @@ export const RUNTIMES = [
     // hooks file of its own.
     manifest: `${PLUGIN}/.claude-plugin/plugin.json`,
     validate: validateMiniMaxPackage,
+    routing: { file: `${PLUGIN}/hooks/session-start-minimax.md`, skill: (name) => `pstack:${name}` },
   },
   {
     name: "Antigravity",
@@ -99,6 +105,7 @@ export const RUNTIMES = [
     manifest: `${PLUGIN}/.antigravity-plugin/plugin.json`,
     validate: ({ manifest, read, statOf, checkExecutable }) =>
       validateAgyManifest(manifest, { claude: JSON.parse(read(`${PLUGIN}/.claude-plugin/plugin.json`)), read, statOf, checkExecutable }),
+    routing: { file: `${PLUGIN}/hooks/session-start-agy.md`, skill: (name) => name },
   },
   {
     name: "OMP",
@@ -114,6 +121,7 @@ export const RUNTIMES = [
     modelNames: kimiModelNamesSection,
     manifest: "kimi.plugin.json",
     validate: ({ manifest, pathExists }) => validateKimiManifest(manifest, { pathExists }),
+    routing: { file: `${PLUGIN}/hooks/kimi-instructions.md`, skill: (name) => `pstack:${name}` },
   },
   {
     name: "Grok Build",
@@ -128,6 +136,7 @@ export const RUNTIMES = [
     modelNames: openCodeModelNamesSection,
     manifest: "package.json",
     validate: ({ manifest, pathExists }) => validateOpenCodePackage(manifest, { pathExists }),
+    routing: { file: `${PLUGIN}/hooks/session-start-opencode.md`, skill: (name) => `pstack-${name}` },
   },
 ].map((runtime) => ({
   ...runtime,
@@ -274,8 +283,41 @@ export const VSCODE_ROUTING_RULE = "rules/pstack-routing.md";
 
 export const VSCODE_ROUTING_BUDGET = 3000;
 
-export const routingCriteria = (text) =>
-  text.split("\n").filter((line) => line.startsWith("- it ") || line.startsWith("It routes to the right pstack skill"));
+export const ROUTING_MANDATE = `${PLUGIN}/hooks/session-start-context.md`;
+const ROUTING_OPEN = "when a task meets any of these:";
+const ROUTING_DIRECT = "When the intent is already specific";
+const ROUTING_CLOSE = "Most pstack skills load only when";
+
+// The block every copy shares with the mandate: the lines after the one that
+// ends with ROUTING_OPEN, through the line that starts with ROUTING_CLOSE.
+function routingBlock(lines, file) {
+  const open = lines.findIndex((line) => line.endsWith(ROUTING_OPEN));
+  const close = lines.findIndex((line, i) => open !== -1 && i > open && line.startsWith(ROUTING_CLOSE));
+  if (close === -1) {
+    throw new Error(`${file}: no routing block from a line ending "${ROUTING_OPEN}" to a line starting "${ROUTING_CLOSE}"`);
+  }
+  return [open + 1, close + 1];
+}
+
+// Replace the routing block of a runtime's copy with the mandate's. The copy
+// keeps its own words before the direct-entry skill list and names each skill
+// through `skill`.
+export function stampRouting(text, mandate, { file, skill }) {
+  const source = mandate.split("\n");
+  const lines = text.split("\n");
+  const [start, end] = routingBlock(lines, file);
+  const direct = lines.slice(start, end).find((line) => line.startsWith(ROUTING_DIRECT));
+  const list = direct?.indexOf("`") ?? -1;
+  if (list === -1) throw new Error(`${file}: no "${ROUTING_DIRECT}" line with a skill list in its routing block`);
+  const block = source.slice(...routingBlock(source, ROUTING_MANDATE)).map((line) => {
+    if (!line.startsWith(ROUTING_DIRECT)) return line;
+    const names = [...line.matchAll(/`pstack:([a-z0-9-]+)`/g)].map(([, name]) => name);
+    if (!names.length) throw new Error(`${ROUTING_MANDATE}: the "${ROUTING_DIRECT}" line names no pstack: skill`);
+    return `${direct.slice(0, list)}${names.map((name) => code(skill(name))).join(", ")}.`;
+  });
+  lines.splice(start, end - start, ...block);
+  return lines.join("\n");
+}
 
 export function validateVSCodeLocalPackage({ manifest, read, pathExists }) {
   const rule = `${PLUGIN}/${VSCODE_ROUTING_RULE}`;
@@ -303,12 +345,6 @@ export function validateVSCodeLocalPackage({ manifest, read, pathExists }) {
   }
   for (const needle of ["`references/vscode-local-tools.md`", "`runSubagent`"]) {
     if (!text.includes(needle)) throw new Error(`${rule}: must name ${needle}, or Local sessions cannot find the mapping or the subagent tool`);
-  }
-  const mandate = `${PLUGIN}/hooks/session-start-context.md`;
-  const expected = routingCriteria(read(mandate));
-  if (!expected.length) throw new Error(`${mandate}: no routing criteria lines to compare ${rule} against`);
-  if (!isDeepStrictEqual(routingCriteria(text), expected)) {
-    throw new Error(`${rule}: routing criteria differ from ${mandate}, so Local would route tasks differently from Claude Code`);
   }
   const size = Buffer.byteLength(text);
   if (size > VSCODE_ROUTING_BUDGET) {

@@ -54,7 +54,7 @@ import { Type } from "typebox";
 import { Value } from "typebox/value";
 
 import { code, codeList, isMain, PLUGIN, SKILLS } from "./plugin.mjs";
-import { PLATFORM_ADAPTATION_OPEN, platformAdaptation, RUNTIMES, roleSkills } from "./runtimes.mjs";
+import { PLATFORM_ADAPTATION_OPEN, platformAdaptation, ROUTING_MANDATE, RUNTIMES, roleSkills, stampRouting } from "./runtimes.mjs";
 import { markdownFiles, pathIsInside, validateProsePaths, validateSkillsTree, walk } from "./validate-skills.mjs";
 
 const repo = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -881,6 +881,8 @@ export function plan(root, models) {
   };
   for (const file of VERSIONED_MANIFESTS) stamp(file, (text) => stampVersion(text, version, file));
   for (const file of new Set(regions(models).map((r) => r.file))) stamp(file, (text) => applyRegions(file, text, models));
+  const mandate = current(ROUTING_MANDATE);
+  for (const { routing } of RUNTIMES.filter((r) => r.routing)) stamp(routing.file, (text) => stampRouting(text, mandate, routing));
   for (const [file, line] of loadLeadLines(root)) {
     stamp(file, (text) => {
       const stamped = stampLeadLine(text, line);
