@@ -259,13 +259,19 @@ describe("readRequiredNames", () => {
       ).toBeNull();
   });
 
-  it("reads only required_status_checks rules and refuses a full page", () => {
+  it("reads required_status_checks rules, gives up on rules gating on unnamed checks, and refuses a full page", () => {
     expect(
       parseRulesetContexts([
         { type: "deletion" },
         rulesetRule(["gate", "lint"]),
       ])
     ).toEqual(["gate", "lint"]);
+    expect(
+      parseRulesetContexts([
+        rulesetRule(["gate"]),
+        { type: "code_scanning", parameters: { code_scanning_tools: [] } },
+      ])
+    ).toBeNull();
     expect(() =>
       parseRulesetContexts(Array.from({ length: 100 }, () => rulesetRule([])))
     ).toThrow("may be truncated");

@@ -93,7 +93,29 @@ function missing(path: string): WatcherQueryError {
   });
 }
 
-export function parseRulesetContexts(response: unknown): string[] {
+const RULES_WITH_NAMED_CHECKS: ReadonlySet<unknown> = new Set([
+  "required_status_checks",
+  "creation",
+  "update",
+  "deletion",
+  "non_fast_forward",
+  "required_linear_history",
+  "required_signatures",
+  "pull_request",
+  "commit_message_pattern",
+  "commit_author_email_pattern",
+  "committer_email_pattern",
+  "branch_name_pattern",
+  "tag_name_pattern",
+  "file_path_restriction",
+  "max_file_path_length",
+  "file_extension_restriction",
+  "max_file_size",
+  "copilot_code_review",
+  "code_coverage",
+]);
+
+export function parseRulesetContexts(response: unknown): string[] | null {
   if (!Array.isArray(response)) throw missing("rules");
   if (response.length >= RULES_PAGE)
     throw new WatcherQueryError({
@@ -101,8 +123,10 @@ export function parseRulesetContexts(response: unknown): string[] {
       retryable: true,
       detail: `rules page holds ${RULES_PAGE} entries and may be truncated`,
     });
-  return response.flatMap((raw) => {
-    const rule = object(raw, "rule");
+  const rules = response.map((raw) => object(raw, "rule"));
+  if (rules.some((rule) => !RULES_WITH_NAMED_CHECKS.has(rule.type)))
+    return null;
+  return rules.flatMap((rule) => {
     if (rule.type !== "required_status_checks") return [];
     const checks = object(
       rule.parameters,
@@ -163,6 +187,7 @@ export async function readRequiredNames(
     ),
     readRepo(`branches/${branch}`).then(parseClassicContexts),
   ]);
+  if (rulesets === null) return null;
   for (const name of [...rulesets, ...classic]) required.add(name);
   for (const name of required) if (!reported.has(name)) return null;
   return required.size === 0 ? null : required;
