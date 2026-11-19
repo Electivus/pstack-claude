@@ -148,17 +148,24 @@ describe.skipIf(!onWindows)("Windows SessionStart hook without PowerShell", () =
 // windows field, else powershell, else command, through
 // `powershell.exe -Command`, and warns the user on the first turn about any
 // exit code other than 0 or 2.
-const claudeSessionStart = JSON.parse(readFileSync(join(pluginRoot, "hooks/hooks.json"), "utf8")).hooks.SessionStart[0].hooks[0];
-
 function runVSCodeLocalHook() {
   const fixture = mkdtempSync(join(tmpdir(), "pstack windows vscode hook "));
   try {
     const plugin = join(fixture, "plugin with spaces");
     cpSync(join(pluginRoot, "hooks"), join(plugin, "hooks"), { recursive: true });
-    const raw = claudeSessionStart.windows ?? claudeSessionStart.powershell ?? claudeSessionStart.command;
+    const raw = claude.windows ?? claude.powershell ?? claude.command;
     // VS Code quotes a plugin root with spaces as a PowerShell literal.
     const command = raw.replace(/(["']?)\$\{CLAUDE_PLUGIN_ROOT\}([\w./\\~:-]*)\1/g, (_, _quote, rest) => `'${`${plugin}${rest}`.replaceAll("'", "''")}'`);
-    const env = { ...windowsHookEnv(fixture, join(fixture, "user profile")), CLAUDE_PLUGIN_ROOT: plugin, POWERSHELL_UPDATECHECK: "Off" };
+    const env = {
+      SystemRoot: systemRoot,
+      PATH: `${nodeDir};${join(systemRoot, "System32")};${join(systemRoot, "System32", "WindowsPowerShell", "v1.0")}`,
+      PATHEXT: process.env.PATHEXT,
+      TEMP: process.env.TEMP,
+      TMP: process.env.TMP,
+      USERPROFILE: join(fixture, "user profile"),
+      CLAUDE_PLUGIN_ROOT: plugin,
+      POWERSHELL_UPDATECHECK: "Off",
+    };
     const result = spawnSync("powershell.exe", ["-ExecutionPolicy", "Bypass", "-NoProfile", "-NoLogo", "-Command", command], {
       env,
       input: JSON.stringify({ hook_event_name: "SessionStart", source: "new" }),
@@ -171,7 +178,7 @@ function runVSCodeLocalHook() {
   }
 }
 
-describe.skipIf(process.platform !== "win32" && !required)("Windows VS Code Local SessionStart hook", () => {
+describe.skipIf(!onWindows)("Windows VS Code Local SessionStart hook", () => {
   test("exits 0 with no output, so the first Local turn shows no hook warning and the routing rule stays the only mandate", () => {
     expect(runVSCodeLocalHook()).toEqual({ status: 0, out: "", err: "" });
   });
