@@ -18,9 +18,15 @@
       "since": "0.9.34",
       "upstream": "not-proposed"
     },
+    "plugins/pstack/skills/arena/SKILL.md": {
+      "kind": "policy",
+      "why": "Asks each candidate for what could break and how to verify it, says only a dispatch failure skips the cross-judge, settles a disagreement on an observable fact with the smallest probe and cites it in the synthesis note, and merges every candidate's risks and checks into the synthesis, with convergence waiving grafting only. Outputs lists the probe and the merged and dropped risks and checks in the synthesis note.",
+      "since": "0.9.151",
+      "upstream": "not-proposed"
+    },
     "plugins/pstack/skills/blast-radius/SKILL.md": {
       "kind": "policy",
-      "why": "Extends the trigger to run before design when a brief asserts something about existing code.",
+      "why": "Extends the trigger to run before design when a brief asserts something about existing code, and to a change that adds a file to a directory several runtimes or consumers load.",
       "since": "0.9.21",
       "upstream": "not-proposed"
     },
@@ -42,6 +48,12 @@
       "since": "0.9.130",
       "upstream": "not-proposed"
     },
+    "plugins/pstack/skills/how/references/explorer-prompt.md": {
+      "kind": "policy",
+      "why": "Adds an output section that lists the subsystem's run, debug, and log entry points, so the parent can observe the system instead of only reading it.",
+      "since": "0.9.151",
+      "upstream": "not-proposed"
+    },
     "plugins/pstack/skills/no-comments/SKILL.md": {
       "kind": "policy",
       "why": "Treats a HOLD that names its dependency, platform, vendor, or protocol rule and where to check it as settled for the run, restores as a HOLD any kill of such a comment without a refuting page or file, and limits a second rejected report's failure to that report's findings so the accepted work still lands. Requires a mutation run that shows an existing check failing before a rejection may claim that check catches the problem. Sets comment-sicko's model from the no-comments reviewer line in pstack-models.md.",
@@ -56,7 +68,7 @@
     },
     "plugins/pstack/skills/poteto-mode/SKILL.md": {
       "kind": "policy",
-      "why": "Adds the Platform Adaptation section, whose runtime sentence the generator stamps from RUNTIMES, with its task-tool and todo.md fallback (per task slug when sessions share a checkout, and beside the short update_plan list that only the desktop app's main conversation keeps), the run-or-verify driver line, which also covers proofs that drive a host app, IDE, or agent runtime, the deploy-platform and defect-severity triggers, a Shipping trigger for any request to merge, land, or ship PRs, the focused-fix exception to the how and architect triggers, the port's principle summaries, the project playbooks paragraph, and the closed-review-gate rule that the Codex and Pi mappings point to, and it points the Agent-call defaults at the Models section with full tool access and the namespaced pstack:poteto-agent name, gives each parallel delegate its own scratch subdirectory and REPL names, requires stopping an abandoned agent before replacing it, renders every reply item as prose, layers technical-writing on top of unslop, and describes Autopilot-full as stopping at merge-ready for the operator's click and Autopilot-stack as Autopilot-full for PRs that build on each other.",
+      "why": "Adds the Platform Adaptation section, whose runtime sentence the generator stamps from RUNTIMES, with its task-tool and todo.md fallback (per task slug when sessions share a checkout, and beside the short update_plan list that only the desktop app's main conversation keeps), the run-or-verify driver line, which also covers proofs that drive a host app, IDE, or agent runtime, the deploy-platform and defect-severity triggers, a Shipping trigger for any request to merge, land, or ship PRs, the focused-fix exception to the how and architect triggers, the port's principle summaries, the project playbooks paragraph, and the closed-review-gate rule that the Codex and Pi mappings point to, and it points the Agent-call defaults at the Models section with full tool access and the namespaced pstack:poteto-agent name, gives each parallel delegate its own scratch subdirectory and REPL names, says an overwritten PR body comes back from GitHub's userContentEdits, runs blast-radius when a change adds a file to a directory several runtimes or consumers load, extends the Attack the Premise summary to a second wait or retry for an external state change, requires stopping an abandoned agent before replacing it, renders every reply item as prose, layers technical-writing on top of unslop, and describes Autopilot-full as stopping at merge-ready for the operator's click and Autopilot-stack as Autopilot-full for PRs that build on each other.",
       "since": "0.9.2",
       "upstream": "not-proposed"
     },
@@ -92,7 +104,7 @@
     },
     "plugins/pstack/skills/poteto-mode/playbooks/feature.md": {
       "kind": "policy",
-      "why": "Gives every file-writing delegate its own worktree, based on the branch's HEAD when it builds on unmerged commits, forbids writing in a worktree a delegate still holds, and puts the CI lint and static-check commands in a code delegate's success criteria.",
+      "why": "Gives every file-writing delegate its own worktree, based on the branch's HEAD when it builds on unmerged commits, forbids writing in a worktree a delegate still holds, and puts every CI job's command in a code delegate's success criteria.",
       "since": "0.9.39",
       "upstream": "not-proposed"
     },
@@ -104,7 +116,7 @@
     },
     "plugins/pstack/skills/poteto-mode/playbooks/opening-a-pr.md": {
       "kind": "policy",
-      "why": "Requires stopping every live agent that holds a worktree before committing, merging, or deploying from it, running the repo's CI lint and static checks locally at their pinned versions before the first push, an owner for each deferred follow-up in Scope, a reply that says merging alone ships nothing when users get the change only through a later release or deploy, and a body read with stderr discarded so gh's hint line cannot reach the squash commit.",
+      "why": "Requires stopping every live agent that holds a worktree before committing, merging, or deploying from it, running every CI job's command locally at its pinned version before the first push, tests and builds included, a Blast Radius section written from the list of consumers that the blast-radius skill builds, one Verification bullet that names each CI job not run locally, an owner for each deferred follow-up in Scope, a reply that says merging alone ships nothing when users get the change only through a later release or deploy, and a body read with stderr discarded so gh's hint line cannot reach the squash commit.",
       "since": "0.9.10",
       "upstream": "not-proposed"
     },
@@ -216,10 +228,22 @@
       "since": "0.9.24",
       "upstream": "not-proposed"
     },
+    "plugins/pstack/skills/principle-attack-the-premise/SKILL.md": {
+      "kind": "policy",
+      "why": "Extends the trigger to a second wait or retry for an external state change that has not arrived, and asks for the record of the current state before the next wait.",
+      "since": "0.9.151",
+      "upstream": "not-proposed"
+    },
     "plugins/pstack/skills/principle-build-the-lever/SKILL.md": {
       "kind": "policy",
       "why": "Requires executable semantic controls for each claimed comparison output and refusal or inconclusive results when required observations are missing.",
       "since": "0.9.91",
+      "upstream": "not-proposed"
+    },
+    "plugins/pstack/skills/principle-fix-root-causes/SKILL.md": {
+      "kind": "policy",
+      "why": "Requires a test-only fix for a flake that exposed a broken product contract to leave a failing or skipped test that names the tracking issue.",
+      "since": "0.9.151",
       "upstream": "not-proposed"
     },
     "plugins/pstack/skills/principle-prove-it-works/SKILL.md": {

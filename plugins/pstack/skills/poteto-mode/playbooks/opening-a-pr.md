@@ -6,7 +6,7 @@ Invoked at the end of every other playbook.
 
 **Commits.** Commit liberally. Rebase into small, ordered commits before opening PRs. Each commit is a future PR: landable, ordered to tell the story. Amend when the fix belongs in a just-made commit. New commit when separable. Commit bodies don't restate the subject.
 
-**PRs.** Before the first push, run the repo's CI lint and static-check commands locally at their pinned versions. Run a missing binary through `npx` or `bunx` at the pinned version rather than skip it. Run `/deslop` over the diff before commit and `/no-comments` before review. Write every PR title, description, and commit body with `/technical-writing` (every layer except Diátaxis, and apply the STE vocabulary rules: one word per action, keep articles, a plain verb over `-ing` where one works), then apply `/unslop`.
+**PRs.** Before the first push, run every CI job's `run:` command locally at its pinned version, tests and builds included. Run a missing binary through `npx` or `bunx` at the pinned version rather than skip it. Name each job you still cannot run locally in `## Verification`. Run `/deslop` over the diff before commit and `/no-comments` before review. Write every PR title, description, and commit body with `/technical-writing` (every layer except Diátaxis, and apply the STE vocabulary rules: one word per action, keep articles, a plain verb over `-ing` where one works), then apply `/unslop`.
 
 **Titles.** Conventional Commits `type(scope): subject`, no trailing period. Type such as `feat`, `fix`, `docs`, `refactor`, `test`, `chore`, or `perf`. Scope is the area, such as `pstack` or `poteto-mode`. Subject is short, imperative, and names a real symbol when one carries the change, for example `fix(pstack): retarget opening-a-pr babysit trigger`.
 
@@ -16,8 +16,8 @@ Invoked at the end of every other playbook.
 - `## What changed`: 1–3 short bullets. Name a real symbol or path only when it carries the change. Name both sides of a rename or retarget.
 - `## Scope`: always. 1–3 short items on what it covers and what it deliberately leaves out (a follow-up, a known gap). No symbols, paths, or file-by-file essay. Name each follow-up's owner, which is an open PR, an issue, or the user. When users get the change only through a later release or deploy, tell the user in your reply that merging alone ships nothing.
 - `## Tradeoffs`: only rejected alternatives a reviewer would otherwise ask about. Skip when there was no real choice.
-- `## Blast Radius`: 1–2 sentences on who or what it touches and why that is safe or risky. If main is red, state the cost of leaving it red.
-- `## Verification`: 1–3 bullets, each a real run path and its outcome. Perf: one primary number with its unit, `before → after`, and a link to the arena or swarm directory for the rest. No sample-size methodology, swarm recitals, or metric tables.
+- `## Blast Radius`: 1–2 sentences on who or what it touches and why that is safe or risky. Write it from the list of consumers, not from what you tested. Build that list with the **blast-radius** skill. If main is red, state the cost of leaving it red.
+- `## Verification`: 1–3 bullets, each a real run path and its outcome, plus one bullet that names each CI job you could not run locally, when there is one. Perf: one primary number with its unit, `before → after`, and a link to the arena or swarm directory for the rest. No sample-size methodology, swarm recitals, or metric tables.
 
 After the sections, attach videos or screenshots when they prove a claim. Full SHAs, swarm or arena lane recitals, lever-correction essays, file-by-file checklists, and "CLEAN" verdicts go in a linked artifact, not the body.
 

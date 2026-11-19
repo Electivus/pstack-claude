@@ -28,6 +28,9 @@ Every file you read during exploration, so the explainer can reference them.
 ### Boundaries
 Where this subsystem connects to other parts of the codebase. The inputs and outputs.
 
+### Run, Debug, and Log Entry Points
+The subsystem's own ways to run and observe it: package scripts, launch configs, debug commands, and where its logs land. For each: the command or name, the file that defines it, and what it shows. If you found none, say where you looked.
+
 ### Non-Obvious Things
 Anything surprising, historically motivated, or easy to get wrong. Things that look like they should work one way but work another.
 
