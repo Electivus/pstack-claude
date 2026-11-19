@@ -44,6 +44,14 @@ bun tools/generate.mjs
 bun test tests/
 ```
 
+Then run the lint jobs CI runs, which are Markdown lint, relative links, shell scripts, workflow lint, and the Prettier check on the vendored scripts:
+
+```shell
+bun tools/ci-local.mjs
+```
+
+The script reads each job's command and pinned version from `.github/workflows/ci.yml`, so the two cannot drift. It needs Node (for `npx`), Docker, `shellcheck`, and Bun. A missing tool fails the run and says how to install it, and nothing is skipped. Pass a job name, such as `bun tools/ci-local.mjs markdownlint`, to run one.
+
 After you commit, `bun tools/check-release.mjs origin/main` says whether the change needs a release. See [Releasing](#releasing).
 
 The root `package.json` declares `typebox` and the optional `@earendil-works/pi-coding-agent` as peer dependencies, because Pi provides both to an extension at runtime. The root `bun.lock` pins `typebox` for the generator, which checks hook files against it, and for the tests under `tests/pi/`, which load the extension outside Pi. Those tests load Pi's package as a Pi process does, signal handlers included, from the copy that `plugins/package.json` pins and `plugins/bun.lock` locks. It sits on the extension's module path but outside every plugin and outside the root package that `pi install` installs, so no user downloads it, and npm never resolves it on a user's install.
@@ -59,7 +67,8 @@ The generator rejects missing Markdown links, links outside the skills tree, and
 - No `commands/` directory.
 - Skills keep upstream's `disable-model-invocation: true`, except the skills the routing hooks invoke with the Skill tool (`MODEL_ENTRY_SKILLS` in `tools/generate.mjs`). The `pstack:<name>` skills that `hooks/session-start-context.md` names must equal that list.
 - Plugin agents use their namespaced `pstack:<name>` names.
-- The VS Code Local build reads the Claude Code manifest and gets routing from `plugins/pstack/rules/pstack-routing.md`. The rule keeps its `.md` suffix, `applyTo: '**'`, the routing conditions of `hooks/session-start-context.md`, and a 3000-byte budget, and no earlier manifest or `rules` entry shadows it.
+- The VS Code Local build reads the Claude Code manifest and gets routing from `plugins/pstack/rules/pstack-routing.md`. The rule keeps its `.md` suffix, `applyTo: '**'`, and a 3000-byte budget, and no earlier manifest or `rules` entry shadows it.
+- That rule and the routing hook files of Antigravity, Kimi Code CLI, MiniMax Code, Muse, and OpenCode 2 each repeat the routing block of `hooks/session-start-context.md`, from the criteria list through the paragraph that starts "Most pstack skills load only when". The generator stamps that block of each copy from the mandate, so edit the mandate and regenerate. A copy keeps its own words before the direct-entry skill list and names the skills its runtime's way, by the `routing` row in `RUNTIMES` (`tools/runtimes.mjs`).
 
 CI runs `bun tools/generate.mjs --check`, which writes nothing and fails naming each generated file that is stale, missing, or orphaned, so commit the generator's output. Run the same command locally to preview CI. It checks your working tree, not the commit, so a gitignored file such as `.DS_Store` in a generated directory fails only locally, and uncommitted regenerated output passes only locally. `.pre-commit-config.yaml` runs the same command before each commit once you run `prek install` (or `pre-commit install`) in your clone.
 

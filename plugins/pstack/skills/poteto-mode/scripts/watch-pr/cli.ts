@@ -6,6 +6,7 @@ import {
   InvalidArgumentError,
   Option,
 } from "commander";
+import { advisoryReader, ghRequiredNames } from "./advisory.ts";
 import {
   GhGitHubReader,
   WatcherQueryError,
@@ -103,6 +104,8 @@ export function parseArgs(
     .exitOverride()
     .option("--owner <owner>", "GitHub repository owner")
     .option("--repo <repo>", "GitHub repository name")
+    .argument("[pr]", "pull request number, same as --pr", prNumber)
+    .allowExcessArguments()
     .option("--pr <number>", "pull request number", prNumber)
     .addOption(
       new Option("--stack", "watch the connected open stack")
@@ -152,12 +155,21 @@ export function parseArgs(
     .option("--pretty", "render human text instead of JSON", false);
   program.parse(argv, { from: "user" });
   const raw = program.opts<RawOptions>();
+  if (program.args.length > 1)
+    program.error(
+      "error: too many arguments; pass one PR number, or use --pr <number>"
+    );
+  const [positional] = program.processedArgs as [T.PrNumber | undefined];
+  if (positional !== undefined && raw.pr !== undefined && raw.pr !== positional)
+    program.error(
+      "error: use --pr <number> or the positional number, not both"
+    );
   if (raw.stackPrs !== undefined && !raw.queuedStack)
     program.error("error: --stack-prs requires --queued-stack");
   return {
     owner: raw.owner ?? null,
     repo: raw.repo ?? null,
-    pr: raw.pr ?? null,
+    pr: raw.pr ?? positional ?? null,
     mode: raw.queuedStack ? "queued-stack" : raw.stack ? "stack" : "single",
     stackPrs: raw.stackPrs ?? [],
     statusOnly: raw.statusOnly,
@@ -182,7 +194,10 @@ function realRuntime(timeout: number): CliRuntime {
   const deadline = new WatchDeadline(timeout, () => performance.now() / 1_000);
   return {
     deadline,
-    reader: new GhGitHubReader(deadline),
+    reader: advisoryReader(
+      new GhGitHubReader(deadline),
+      ghRequiredNames(deadline)
+    ),
     clock: {
       now: () => performance.now() / 1_000,
       observedAt: () => new Date().toISOString(),

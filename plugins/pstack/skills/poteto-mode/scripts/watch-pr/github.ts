@@ -513,7 +513,7 @@ export function parsePullRequest(
       }
     : { ...facts, state: facts.state };
 }
-function graphqlArgs(
+export function graphqlArgs(
   query: string,
   context: T.PrContext
 ): [string, ...string[]] {
