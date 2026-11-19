@@ -53,9 +53,10 @@ export const LINT_JOBS = [
 ];
 
 // What a step must declare for the local run to match CI: the command, the
-// directory it runs in, and the environment it sees. Any other step key
+// directory it runs in, and the environment it sees. timeout-minutes is also
+// fine, since it cannot change whether a lint passes. Any other step key
 // changes how CI runs the step, so jobCommand refuses it.
-const REPRODUCIBLE_KEYS = new Set(["name", "id", "run", "working-directory", "env", "shell"]);
+const REPRODUCIBLE_KEYS = new Set(["name", "id", "run", "working-directory", "env", "shell", "timeout-minutes"]);
 
 function reproducibleEnv(env, where) {
   const entries = Object.entries(env ?? {}).map(([key, value]) => {
@@ -75,13 +76,17 @@ export function jobCommand(workflow, { job, step }) {
   for (const key of Object.keys(found)) {
     if (!REPRODUCIBLE_KEYS.has(key)) throw new Error(`ci.yml ${where}: ci-local cannot reproduce "${key}"`);
   }
-  const defaults = definition.defaults?.run ?? {};
+  const defaults = { ...workflow.defaults?.run, ...definition.defaults?.run };
   const shell = found.shell ?? defaults.shell ?? "bash";
   if (shell !== "bash") throw new Error(`ci.yml ${where}: ci-local runs bash, not shell "${shell}"`);
   return {
     run: found.run,
     cwd: found["working-directory"] ?? defaults["working-directory"] ?? ".",
-    env: { ...reproducibleEnv(definition.env, `job "${job}"`), ...reproducibleEnv(found.env, where) },
+    env: {
+      ...reproducibleEnv(workflow.env, "workflow"),
+      ...reproducibleEnv(definition.env, `job "${job}"`),
+      ...reproducibleEnv(found.env, where),
+    },
   };
 }
 
@@ -92,14 +97,20 @@ export function exportTracked(root = REPO_ROOT) {
   });
   if (listed.status !== 0) throw new Error(`git ls-files failed in ${root}: ${listed.stderr}`);
   const out = mkdtempSync(join(tmpdir(), "ci-local-"));
-  spawnSync("git", ["init", "-q", out], { stdio: "ignore" });
-  for (const path of new Set(listed.stdout.split("\0").filter(Boolean))) {
-    try {
-      mkdirSync(dirname(join(out, path)), { recursive: true });
-      cpSync(join(root, path), join(out, path), { verbatimSymlinks: true });
-    } catch (error) {
-      if (error.code !== "ENOENT") throw error;
+  try {
+    spawnSync("git", ["init", "-q", out], { stdio: "ignore" });
+    for (const path of new Set(listed.stdout.split("\0").filter(Boolean))) {
+      if (path.endsWith("/")) continue;
+      try {
+        mkdirSync(dirname(join(out, path)), { recursive: true });
+        cpSync(join(root, path), join(out, path), { verbatimSymlinks: true });
+      } catch (error) {
+        if (error.code !== "ENOENT") throw error;
+      }
     }
+  } catch (error) {
+    rmSync(out, { recursive: true, force: true });
+    throw error;
   }
   return out;
 }
