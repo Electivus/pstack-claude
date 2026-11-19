@@ -16,8 +16,8 @@ Invoked at the end of every other playbook.
 - `## What changed`: 1–3 short bullets. Name a real symbol or path only when it carries the change. Name both sides of a rename or retarget.
 - `## Scope`: always. 1–3 short items on what it covers and what it deliberately leaves out (a follow-up, a known gap). No symbols, paths, or file-by-file essay. Name each follow-up's owner, which is an open PR, an issue, or the user. When users get the change only through a later release or deploy, tell the user in your reply that merging alone ships nothing.
 - `## Tradeoffs`: only rejected alternatives a reviewer would otherwise ask about. Skip when there was no real choice.
-- `## Blast Radius`: 1–2 sentences on who or what it touches and why that is safe or risky. Write it from the list of consumers, not from what you tested. If main is red, state the cost of leaving it red.
-- `## Verification`: 1–3 bullets, each a real run path and its outcome. Perf: one primary number with its unit, `before → after`, and a link to the arena or swarm directory for the rest. No sample-size methodology, swarm recitals, or metric tables.
+- `## Blast Radius`: 1–2 sentences on who or what it touches and why that is safe or risky. Write it from the list of consumers, not from what you tested. Build that list with the **blast-radius** skill. If main is red, state the cost of leaving it red.
+- `## Verification`: 1–3 bullets, each a real run path and its outcome, plus one bullet that names each CI job you could not run locally, when there is one. Perf: one primary number with its unit, `before → after`, and a link to the arena or swarm directory for the rest. No sample-size methodology, swarm recitals, or metric tables.
 
 After the sections, attach videos or screenshots when they prove a claim. Full SHAs, swarm or arena lane recitals, lever-correction essays, file-by-file checklists, and "CLEAN" verdicts go in a linked artifact, not the body.
 

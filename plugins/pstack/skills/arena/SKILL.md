@@ -56,7 +56,7 @@ Verify the synthesized artifact like any other output, per the **prove-it-works*
 
 ## Outputs
 
-One synthesized artifact, with a short synthesis note alongside naming the base and why, the cross-judge's verdict or that Phase C skipped the judge, each graft with its source candidate, what was rejected and why, any convergence or dropouts, and the verification result.
+One synthesized artifact, with a short synthesis note alongside naming the base and why, the cross-judge's verdict or that Phase C skipped the judge, each graft with its source candidate, the probe that settled any disagreement on an observable fact, every candidate's merged risks and verification checks with the reason for each one dropped, what was rejected and why, any convergence or dropouts, and the verification result.
 
 ## Models
 

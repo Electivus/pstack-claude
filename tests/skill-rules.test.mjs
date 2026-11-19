@@ -323,6 +323,11 @@ const rules = [
     phrase: "Merge every candidate's risks and verification checks into the synthesis, separately from the design grafts",
   },
   {
+    source: "#25 #27 the synthesis note carries the probe and the merged checks",
+    file: "arena/SKILL.md",
+    phrase: "the probe that settled any disagreement on an observable fact, every candidate's merged risks and verification checks with the reason for each one dropped",
+  },
+  {
     source: "#31 a file added to a shared directory runs blast-radius",
     file: "poteto-mode/SKILL.md",
     phrase: "A change that adds a file to a directory several runtimes or consumers load → the **blast-radius** skill",
@@ -331,6 +336,16 @@ const rules = [
     source: "#31 Blast Radius comes from the consumers",
     file: "poteto-mode/playbooks/opening-a-pr.md",
     phrase: "Write it from the list of consumers, not from what you tested.",
+  },
+  {
+    source: "#31 Blast Radius runs blast-radius",
+    file: "poteto-mode/playbooks/opening-a-pr.md",
+    phrase: "Build that list with the **blast-radius** skill.",
+  },
+  {
+    source: "#21 Verification names each CI job not run locally",
+    file: "poteto-mode/playbooks/opening-a-pr.md",
+    phrase: "plus one bullet that names each CI job you could not run locally",
   },
   {
     source: "#31 blast-radius description names shared directories",

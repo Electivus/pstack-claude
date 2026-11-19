@@ -20,7 +20,7 @@
     },
     "plugins/pstack/skills/arena/SKILL.md": {
       "kind": "policy",
-      "why": "Asks each candidate for what could break and how to verify it, says only a dispatch failure skips the cross-judge, settles a disagreement on an observable fact with the smallest probe and cites it in the synthesis note, and merges every candidate's risks and checks into the synthesis, with convergence waiving grafting only.",
+      "why": "Asks each candidate for what could break and how to verify it, says only a dispatch failure skips the cross-judge, settles a disagreement on an observable fact with the smallest probe and cites it in the synthesis note, and merges every candidate's risks and checks into the synthesis, with convergence waiving grafting only. Outputs lists the probe and the merged and dropped risks and checks in the synthesis note.",
       "since": "0.9.150",
       "upstream": "not-proposed"
     },
@@ -116,7 +116,7 @@
     },
     "plugins/pstack/skills/poteto-mode/playbooks/opening-a-pr.md": {
       "kind": "policy",
-      "why": "Requires stopping every live agent that holds a worktree before committing, merging, or deploying from it, running every CI job's command locally at its pinned version before the first push, tests and builds included, a Blast Radius section written from the list of consumers, an owner for each deferred follow-up in Scope, a reply that says merging alone ships nothing when users get the change only through a later release or deploy, and a body read with stderr discarded so gh's hint line cannot reach the squash commit.",
+      "why": "Requires stopping every live agent that holds a worktree before committing, merging, or deploying from it, running every CI job's command locally at its pinned version before the first push, tests and builds included, a Blast Radius section written from the list of consumers that the blast-radius skill builds, one Verification bullet that names each CI job not run locally, an owner for each deferred follow-up in Scope, a reply that says merging alone ships nothing when users get the change only through a later release or deploy, and a body read with stderr discarded so gh's hint line cannot reach the squash commit.",
       "since": "0.9.10",
       "upstream": "not-proposed"
     },
