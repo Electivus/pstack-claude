@@ -21,7 +21,7 @@
     "plugins/pstack/skills/arena/SKILL.md": {
       "kind": "policy",
       "why": "Asks each candidate for what could break and how to verify it, says only a dispatch failure skips the cross-judge, settles a disagreement on an observable fact with the smallest probe and cites it in the synthesis note, and merges every candidate's risks and checks into the synthesis, with convergence waiving grafting only. Outputs lists the probe and the merged and dropped risks and checks in the synthesis note.",
-      "since": "0.9.150",
+      "since": "0.9.151",
       "upstream": "not-proposed"
     },
     "plugins/pstack/skills/blast-radius/SKILL.md": {
@@ -51,7 +51,7 @@
     "plugins/pstack/skills/how/references/explorer-prompt.md": {
       "kind": "policy",
       "why": "Adds an output section that lists the subsystem's run, debug, and log entry points, so the parent can observe the system instead of only reading it.",
-      "since": "0.9.150",
+      "since": "0.9.151",
       "upstream": "not-proposed"
     },
     "plugins/pstack/skills/no-comments/SKILL.md": {
@@ -231,7 +231,7 @@
     "plugins/pstack/skills/principle-attack-the-premise/SKILL.md": {
       "kind": "policy",
       "why": "Extends the trigger to a second wait or retry for an external state change that has not arrived, and asks for the record of the current state before the next wait.",
-      "since": "0.9.150",
+      "since": "0.9.151",
       "upstream": "not-proposed"
     },
     "plugins/pstack/skills/principle-build-the-lever/SKILL.md": {
@@ -243,7 +243,7 @@
     "plugins/pstack/skills/principle-fix-root-causes/SKILL.md": {
       "kind": "policy",
       "why": "Requires a test-only fix for a flake that exposed a broken product contract to leave a failing or skipped test that names the tracking issue.",
-      "since": "0.9.150",
+      "since": "0.9.151",
       "upstream": "not-proposed"
     },
     "plugins/pstack/skills/principle-prove-it-works/SKILL.md": {
