@@ -43,10 +43,13 @@ function instancePath(name) {
 const sqlite = (db, sql) => execFileSync("sqlite3", [db, sql], { encoding: "utf8" }).trim();
 const quote = (s) => `'${s.replaceAll("'", "''")}'`;
 
+// The agent host reads COPILOT_HOME, else ~/.copilot, and its runtime can rewrite files there, so every child gets the instance's own home.
+const childEnv = (instance) => ({ ...process.env, VSCODE_PORTABLE: instance, COPILOT_HOME: paths(instance).copilotHome });
+
 // VS Code's portable layout: VSCODE_PORTABLE=<instance> means <instance>/user-data and <instance>/extensions.
 function paths(instance) {
   const userDataDir = join(instance, "user-data");
-  return { userDataDir, extensionsDir: join(instance, "extensions"), workspace: join(instance, "workspace"), user: join(userDataDir, "User") };
+  return { userDataDir, extensionsDir: join(instance, "extensions"), workspace: join(instance, "workspace"), user: join(userDataDir, "User"), copilotHome: join(instance, "copilot-home") };
 }
 
 function mainPids(userDataDir) {
@@ -74,7 +77,7 @@ function setup(instance) {
     console.error(`${p.userDataDir} is in use. Run quit first.`);
     process.exit(1);
   }
-  for (const d of [join(p.user, "globalStorage"), p.extensionsDir, p.workspace]) mkdirSync(d, { recursive: true });
+  for (const d of [join(p.user, "globalStorage"), p.extensionsDir, p.workspace, p.copilotHome]) mkdirSync(d, { recursive: true });
   writeFileSync(join(instance, MARKER), "created by vscode-instance.mjs setup; clean refuses a directory without this file\n");
 
   const settings = {
@@ -99,7 +102,7 @@ function setup(instance) {
 
 function launch(instance) {
   const p = paths(instance);
-  spawnSync(cli, ["--user-data-dir", p.userDataDir, "--extensions-dir", p.extensionsDir, "-n", p.workspace], { stdio: "inherit" });
+  spawnSync(cli, ["--user-data-dir", p.userDataDir, "--extensions-dir", p.extensionsDir, "-n", p.workspace], { stdio: "inherit", env: childEnv(instance) });
   return { launched: p.workspace, pids: mainPids(p.userDataDir) };
 }
 
@@ -109,7 +112,7 @@ function send(instance, text) {
     process.exit(1);
   }
   const since = Date.now();
-  const run = spawnSync(cli, ["chat", text], { cwd: paths(instance).workspace, env: { ...process.env, VSCODE_PORTABLE: instance }, encoding: "utf8" });
+  const run = spawnSync(cli, ["chat", text], { cwd: paths(instance).workspace, env: childEnv(instance), encoding: "utf8" });
   return { since, exitCode: run.status, stdout: run.stdout.trim(), stderr: run.stderr.trim() };
 }
 
@@ -141,6 +144,8 @@ function clean(instance) {
     const debug = join(storage, ws, "GitHub.copilot-chat/debug-logs");
     if (existsSync(debug)) cpSync(debug, join(evidence, "debug-logs"), { recursive: true });
   }
+  const sessionState = join(paths(instance).copilotHome, "session-state");
+  if (existsSync(sessionState)) cpSync(sessionState, join(evidence, "session-state"), { recursive: true });
   rmSync(instance, { recursive: true, force: true });
   return { removed: instance, evidence };
 }

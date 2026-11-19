@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 // Usage:
 //   node read-log.mjs claude <stream.jsonl> [--find <word>]...
-//   node read-log.mjs copilot --since <epoch ms> --match <text> [--wait <s>] [--find <word>]...
+//   node read-log.mjs copilot --instance <dir> --since <epoch ms> --match <text> [--wait <s>] [--find <word>]...  (or COPILOT_HOME set, never the user's ~/.copilot)
 //   node read-log.mjs local --since <epoch ms> --match <text> [--wait <s>] [--find <word>]... [--user-data-dir <dir>]
 //   node read-log.mjs hooks <hooks.jsonl>
 //   node read-log.mjs policy [--user-data-dir <dir>]
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { homedir, platform } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { execFileSync } from "node:child_process";
 import { parseArgs } from "node:util";
 
@@ -18,6 +18,7 @@ const { values, positionals } = parseArgs({
     match: { type: "string" },
     wait: { type: "string", default: "0" },
     find: { type: "string", multiple: true, default: [] },
+    instance: { type: "string" },
     "user-data-dir": { type: "string", default: defaultUserDataDir() },
   },
 });
@@ -96,7 +97,12 @@ function readClaude(path) {
 }
 
 function copilotSessions(since) {
-  const root = join(process.env.COPILOT_HOME ?? join(homedir(), ".copilot"), "session-state");
+  const home = values.instance ? join(resolve(values.instance), "copilot-home") : process.env.COPILOT_HOME;
+  if (!home) {
+    console.error("copilot needs --instance <dir> or COPILOT_HOME naming an instance's copilot-home. It never reads the user's ~/.copilot.");
+    process.exit(2);
+  }
+  const root = join(home, "session-state");
   if (!existsSync(root)) return [];
   return readdirSync(root)
     .map((id) => join(root, id))
