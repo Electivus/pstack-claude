@@ -224,7 +224,7 @@
     },
     "plugins/pstack/skills/principle-prove-it-works/SKILL.md": {
       "kind": "policy",
-      "why": "Adds checks that the process behind a result was sound, that a failing check fails for the predicted reason, and that a success report rests on the real state and exit code rather than truncated output.",
+      "why": "Adds checks that the process behind a result was sound, that a failing check fails for the predicted reason, that a success report rests on the real state and exit code rather than truncated output, and that a negative probe or a failure blamed on the change rests on the host's record or a control run rather than the model's self-report.",
       "since": "0.1.0",
       "upstream": "not-proposed"
     },
