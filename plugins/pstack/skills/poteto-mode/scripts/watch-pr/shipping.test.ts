@@ -4,7 +4,9 @@ import {
   GhShippingService,
   cancelPending,
   inspectLanding,
+  parseIntendedIssues,
   parseLandingRecord,
+  refusals,
   type LandingRecord,
   type ShippingService,
 } from "./shipping.ts";
@@ -30,6 +32,9 @@ function fixture(pending: LandingRecord["pending"]) {
   const service: ShippingService = {
     async inspect() {
       return current;
+    },
+    async readContent() {
+      return { title: "Title", body: "", closingIssues: [] };
     },
     async disableAutoMerge(id) {
       expect(id).toBe("pr-id");
@@ -356,5 +361,79 @@ describe("shipping validation detail", () => {
     expect(() =>
       parseLandingRecord({ ...empty, pending: { queueEntryId: null } })
     ).toThrow("missing autoMerge state");
+  });
+});
+
+describe("closing issues and hint lines", () => {
+  const content = {
+    title: "Title",
+    body: "Fixes #8",
+    closingIssues: ["owner/repo#8"],
+  };
+
+  it("normalizes the intended issues to sorted, unique owner/repo#number", () => {
+    expect(parseIntendedIssues("9, #8,8,Other/Repo#2", context)).toEqual([
+      "other/repo#2",
+      "owner/repo#8",
+      "owner/repo#9",
+    ]);
+    expect(parseIntendedIssues("", context)).toEqual([]);
+    expect(() => parseIntendedIssues("8,x", context)).toThrow(
+      "--closes entry x"
+    );
+  });
+
+  it("checks closing issues only when an intended set is given", () => {
+    expect(refusals(content, undefined)).toEqual([]);
+    expect(refusals(content, ["owner/repo#8"])).toEqual([]);
+    expect(refusals(content, [])).toEqual([
+      { rule: "closing-issues", expected: [], observed: ["owner/repo#8"] },
+    ]);
+  });
+
+  it("flags a line that starts with hint: in the body or title, not one that only contains it", () => {
+    expect(
+      refusals({ ...content, body: "see the hint: above" }, undefined)
+    ).toEqual([]);
+    expect(
+      refusals({ ...content, body: "a\r\nhint: x\r\nb" }, undefined)
+    ).toEqual([{ rule: "hint-line", field: "body", line: "hint: x" }]);
+    expect(refusals({ ...content, title: "hint: x" }, undefined)).toMatchObject(
+      [{ rule: "hint-line", field: "title" }]
+    );
+  });
+
+  it("refuses an inspection before it returns the record as inspected", async () => {
+    const f = fixture({ autoMerge: false, queueEntryId: null });
+    expect(await inspectLanding(f.service, context, [])).toEqual({
+      kind: "inspected",
+      record: empty,
+    });
+    expect(await inspectLanding(f.service, context, ["owner/repo#8"])).toEqual({
+      kind: "refused",
+      record: empty,
+      refusals: [
+        { rule: "closing-issues", expected: ["owner/repo#8"], observed: [] },
+      ],
+    });
+  });
+
+  it("reads closing issues and text through GraphQL and refuses a partial page", async () => {
+    const page = (totalCount: number) => ({
+      title: "T",
+      body: "",
+      closingIssuesReferences: {
+        totalCount,
+        nodes: [{ number: 8, repository: { nameWithOwner: "Owner/Repo" } }],
+      },
+    });
+    const ok = new GhShippingService(async () => response(page(1)));
+    expect(await ok.readContent(context)).toEqual({
+      title: "T",
+      body: "",
+      closingIssues: ["owner/repo#8"],
+    });
+    const partial = new GhShippingService(async () => response(page(2)));
+    await expect(partial.readContent(context)).rejects.toThrow("more issues");
   });
 });

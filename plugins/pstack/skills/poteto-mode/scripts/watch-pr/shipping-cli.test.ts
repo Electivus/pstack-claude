@@ -35,6 +35,12 @@ function fixture(
       autoMergeRequest: { enabledAt: "now" },
       mergeQueueEntry: { id: "queue" },
       mergeCommit: null,
+      title: "Make a change",
+      body: "Fixes #8",
+      closingIssuesReferences: {
+        totalCount: 1,
+        nodes: [{ number: 8, repository: { nameWithOwner: "Owner/Repo" } }],
+      },
     })
   );
   const gh = join(dir, "gh");
@@ -157,3 +163,88 @@ for (const state of ["CLOSED", "MERGED"]) {
       expect(JSON.parse(readFileSync(file, "utf8"))).toEqual(terminal);
     }));
 }
+
+it("the CLI passes an inspection whose closing issues match --closes, however written", () =>
+  fixture((run) => {
+    for (const closes of ["8", "#8", "owner/repo#8", " 8 , #8 "]) {
+      const result = run(
+        "inspect",
+        "--repo",
+        "owner/repo",
+        "--pr",
+        "1",
+        "--closes",
+        closes
+      );
+      expect(result.status).toBe(0);
+      expect(result.output.kind).toBe("inspected");
+    }
+  }));
+
+it("the CLI refuses, with both lists, when closing issues differ from --closes", () =>
+  fixture((run, file, dir) => {
+    for (const closes of ["9", "8,9", ""]) {
+      const result = run(
+        "inspect",
+        "--repo",
+        "owner/repo",
+        "--pr",
+        "1",
+        "--closes",
+        closes
+      );
+      expect(result.status).toBe(1);
+      expect(result.output).toMatchObject({
+        kind: "refused",
+        refusals: [
+          {
+            rule: "closing-issues",
+            expected:
+              closes === ""
+                ? []
+                : closes.split(",").map((n) => `owner/repo#${n}`),
+            observed: ["owner/repo#8"],
+          },
+        ],
+      });
+    }
+    const saved = join(dir, "record.json");
+    writeFileSync(
+      saved,
+      JSON.stringify(
+        run("inspect", "--repo", "owner/repo", "--pr", "1", "--closes", "9")
+          .output
+      )
+    );
+    expect(run("cancel-pending", "--record", saved).output.kind).toBe(
+      "cancelled"
+    );
+  }));
+
+it("the CLI refuses a body with a hint line even when no --closes is given", () =>
+  fixture((run, file) => {
+    const state = JSON.parse(readFileSync(file, "utf8"));
+    state.body = "Fixes #8\n\nhint: if you need to wait for this pull request";
+    writeFileSync(file, JSON.stringify(state));
+    const result = run("inspect", "--repo", "owner/repo", "--pr", "1");
+    expect(result.status).toBe(1);
+    expect(result.output).toMatchObject({
+      kind: "refused",
+      refusals: [{ rule: "hint-line", field: "body" }],
+    });
+  }));
+
+it("the CLI rejects a malformed --closes entry", () =>
+  fixture((run) => {
+    const result = run(
+      "inspect",
+      "--repo",
+      "owner/repo",
+      "--pr",
+      "1",
+      "--closes",
+      "eight"
+    );
+    expect(result.status).toBe(1);
+    expect(result.output.kind).toBe("unavailable");
+  }));

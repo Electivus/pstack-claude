@@ -7,6 +7,7 @@ import {
   GhShippingService,
   cancelPending,
   inspectLanding,
+  parseIntendedIssues,
   parseLandingRecord,
   type ShippingResult,
 } from "./shipping.ts";
@@ -23,7 +24,11 @@ export async function main(argv: readonly string[]): Promise<number> {
     .command("inspect")
     .requiredOption("--repo <owner/repo>")
     .requiredOption("--pr <number>")
-    .action(async (options: { repo: string; pr: string }) => {
+    .option(
+      "--closes <issues>",
+      "comma-separated issues the PR must close (12, #12, or owner/repo#12); an empty list means none. Refuses when closingIssuesReferences differs"
+    )
+    .action(async (options: { repo: string; pr: string; closes?: string }) => {
       const parts = options.repo.split("/");
       if (parts.length !== 2) throw new Error("--repo must be owner/repo");
       const context = parseContext({
@@ -31,7 +36,13 @@ export async function main(argv: readonly string[]): Promise<number> {
         repo: parts[1],
         number: Number(options.pr),
       });
-      result = await inspectLanding(service, context);
+      result = await inspectLanding(
+        service,
+        context,
+        options.closes === undefined
+          ? undefined
+          : parseIntendedIssues(options.closes, context)
+      );
     });
   cli
     .command("cancel-pending")
@@ -44,9 +55,13 @@ export async function main(argv: readonly string[]): Promise<number> {
         JSON.parse(await readFile(options.record, "utf8")),
         "saved inspection"
       );
-      if (input.kind !== "inspected" && input.kind !== "cancelled")
+      if (
+        input.kind !== "inspected" &&
+        input.kind !== "cancelled" &&
+        input.kind !== "refused"
+      )
         throw new Error(
-          "record must contain a successful inspection or cancellation"
+          "record must contain an inspection, a refused inspection, or a cancellation"
         );
       result = await cancelPending(service, parseLandingRecord(input.record));
     });
