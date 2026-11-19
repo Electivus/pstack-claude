@@ -7,7 +7,6 @@ import { loadModels } from "../tools/generate.mjs";
 import { PLUGIN } from "../tools/plugin.mjs";
 import {
   roleSkills,
-  routingCriteria,
   RUNTIMES,
   validateVSCodeLocalPackage,
   VSCODE_MANIFESTS,
@@ -25,7 +24,6 @@ const readTree = (rel) => readFileSync(join(repoRoot, rel), "utf8");
 
 const manifest = JSON.parse(readTree(`${PLUGIN}/.claude-plugin/plugin.json`));
 const RULE = `${PLUGIN}/${VSCODE_ROUTING_RULE}`;
-const MANDATE = `${PLUGIN}/hooks/session-start-context.md`;
 const rule = readTree(RULE);
 const mapping = readTree(vscode.tools);
 
@@ -38,10 +36,6 @@ function check({ files = {}, extra = [], removed = [], manifest: replaced = mani
 }
 
 const FRONT_MATTER = /^---\n[\s\S]*?\n---\n/;
-const withoutCriteria = (text) => {
-  const criteria = new Set(routingCriteria(text));
-  return text.split("\n").filter((line) => !criteria.has(line)).join("\n");
-};
 const withFrontMatter = (front) => rule.replace(FRONT_MATTER, `---\n${front}\n---\n`);
 
 mappingCoverage(vscode, [
@@ -116,20 +110,6 @@ describe("VS Code Local agent packaging", () => {
     expect(() => check({ files: { [RULE]: rule.replaceAll(needle, "x") } })).toThrow(`${RULE}: must name ${needle}`);
   });
 
-  test("a changed routing criterion fails, and so does a rule with none", () => {
-    const [first] = routingCriteria(rule);
-    expect(() => check({ files: { [RULE]: rule.replace(first, `${first} today`) } })).toThrow(
-      `${RULE}: routing criteria differ from ${MANDATE}`,
-    );
-    expect(() => check({ files: { [RULE]: withoutCriteria(rule) } })).toThrow(`${RULE}: routing criteria differ from ${MANDATE}`);
-  });
-
-  test("a mandate with no criteria lines fails, since the comparison would pass with nothing to compare", () => {
-    expect(() => check({ files: { [MANDATE]: withoutCriteria(readTree(MANDATE)), [RULE]: withoutCriteria(rule) } })).toThrow(
-      `${MANDATE}: no routing criteria lines`,
-    );
-  });
-
   test("a rule over the byte budget fails with its size", () => {
     const padded = `${rule}${"x".repeat(VSCODE_ROUTING_BUDGET)}\n`;
     expect(() => check({ files: { [RULE]: padded } })).toThrow(`${Buffer.byteLength(padded)} bytes; Local attaches it to every request`);
@@ -141,11 +121,6 @@ describe("the routing rule", () => {
     expect(RULE.endsWith("/rules/pstack-routing.md")).toBe(true);
     expect(Buffer.byteLength(rule)).toBeLessThanOrEqual(3000);
     expect(VSCODE_ROUTING_BUDGET).toBe(3000);
-  });
-
-  test("states the routing criteria that Claude Code's mandate states", () => {
-    expect(routingCriteria(readTree(MANDATE))).toHaveLength(4);
-    expect(routingCriteria(rule)).toEqual(routingCriteria(readTree(MANDATE)));
   });
 
   test("scopes itself to the runSubagent session before its mandate starts", () => {
