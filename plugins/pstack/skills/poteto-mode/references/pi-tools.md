@@ -14,7 +14,7 @@ pstack skills are written in Claude Code tool language (the `Skill` tool, the `A
 | Search file contents / find files | `grep`, `find`, and `ls` when enabled, otherwise `bash` (`rg`, `grep`, `find`, `ls`). Pi enables only `read`, `bash`, `edit`, and `write` by default. |
 | Fetch a URL | `bash` with `curl` / `wget` |
 | Search the web | Pi has no web search tool. Use an MCP server that provides one. |
-| Invoke a skill (the `Skill` tool, `/command`) | Skills load natively. The model reads a skill when its description matches; `/skill:<name>` forces one. |
+| Invoke a skill (the `Skill` tool, `/command`) | Skills load natively. The model reads a listed skill when its description matches; `/skill:<name>` forces one. A skill with `disable-model-invocation: true`, as most pstack skills carry, is not listed, so read its `SKILL.md` by path as the routing mandate says. |
 | Dispatch a subagent (the `Agent`/`Task` tool) | `agent` |
 | Dispatch N parallel subagents in one turn | N `agent` calls with `run_in_background: true` in one response |
 | Wait for a subagent result | A foreground `agent` call returns the final text. A background agent's completion arrives as a message naming its id, status, and final text, after your current tool calls or as a new turn when you are idle, so do not poll. |

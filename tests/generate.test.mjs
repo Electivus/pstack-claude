@@ -343,25 +343,19 @@ describe("parseFrontmatter", () => {
 describe("deriveSkill", () => {
   const front = (flags, name = "x") => `---\nname: ${name}\ndescription: d\n${flags}---\n\nbody\n`;
 
-  test("drops disable-model-invocation on a public skill and swaps it on a principle leaf", () => {
-    expect(deriveSkill("plugins/pstack/skills/x/SKILL.md", front("disable-model-invocation: true\n"), models, leads)).toBe(
-      front(""),
-    );
-    expect(
-      deriveSkill(
-        "plugins/pstack/skills/principle-x/SKILL.md",
-        front("disable-model-invocation: true\n", "principle-x"),
-        models,
-        leads,
-      ),
-    ).toBe(front("user-invocable: false\n", "principle-x"));
+  test("keeps disable-model-invocation except on the skills the routing hooks invoke", () => {
+    const flag = "disable-model-invocation: true\n";
+    for (const name of ["x", "principle-x", "unslop"]) {
+      expect(deriveSkill(`plugins/pstack/skills/${name}/SKILL.md`, front(flag, name), models, leads)).toBe(front(flag, name));
+    }
+    expect(deriveSkill("plugins/pstack/skills/tdd/SKILL.md", front(flag, "tdd"), models, leads)).toBe(front("", "tdd"));
   });
 
   test("names a skill after its directory and an agent after its file, and drops Cursor-only keys", () => {
     const cursorKeys = "mode: true\nicon: crown\ncolor: yellow\nreminder: >-\n  New task?\n  Apply it.\n";
     expect(
       deriveSkill("plugins/pstack/skills/x/SKILL.md", front(`${cursorKeys}disable-model-invocation: true\n`, "X Mode"), models, leads),
-    ).toBe(front(""));
+    ).toBe(front("disable-model-invocation: true\n"));
     expect(deriveSkill("plugins/pstack/agents/comment-sicko.md", front("is_background: true\n", "Comment Sicko"), models, leads)).toBe(
       front("", "comment-sicko"),
     );
@@ -405,7 +399,7 @@ describe("deriveSkill", () => {
   test("leaves a region whose anchor upstream lacks unstamped instead of throwing", () => {
     const text = front("disable-model-invocation: true\n") + "no override sheet here\n";
     const out = deriveSkill("plugins/pstack/skills/setup-pstack/SKILL.md", text, models, leads);
-    expect(out).toBe(front("", "setup-pstack") + "no override sheet here\n");
+    expect(out).toBe(front("disable-model-invocation: true\n", "setup-pstack") + "no override sheet here\n");
   });
 
   test("appends and stamps interrogate's Models section with the reviewer panel", () => {

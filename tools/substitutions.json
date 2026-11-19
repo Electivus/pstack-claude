@@ -81,8 +81,8 @@
     },
     {
       "pattern": "(shipped in the Thermos plugin)",
-      "replacement": "(shipped in this plugin)",
-      "rationale": "the port carries the thermos skills inside pstack, not as a separate plugin"
+      "replacement": "(shipped in this plugin; the Skill tool refuses it, so read the `SKILL.md` path the parent's brief gives)",
+      "rationale": "the port carries the thermos skills inside pstack, not as a separate plugin, and keeps upstream's disable-model-invocation on them, so thermos passes each rubric's path"
     },
     {
       "pattern": "skill in the Thermos plugin.",

@@ -8,7 +8,7 @@ import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { agentSkills, pluginAgentPaths, validatePluginLayout } from "../tools/generate.mjs";
+import { agentSkills, MODEL_ENTRY_SKILLS, pluginAgentPaths, validatePluginLayout } from "../tools/generate.mjs";
 
 const shippedAgents = pluginAgentPaths(fileURLToPath(new URL("../plugins/pstack", import.meta.url))).map((p) =>
   basename(p, ".md"),
@@ -36,7 +36,7 @@ function plugin(mutate = () => {}) {
   const root = mkdtempSync(join(tmpdir(), "invariants-"));
   fixtures.push(root);
   skill(root, "good", "");
-  skill(root, "principle-good", "user-invocable: false\n");
+  skill(root, "principle-good", "disable-model-invocation: true\n");
   mutate(root);
   return root;
 }
@@ -69,19 +69,18 @@ describe("static plugin invariants", () => {
     expect(() => check(root)).toThrow('has an "agents" list');
   });
 
-  test("disable-model-invocation on a skill fails and names the file", () => {
-    const root = plugin((r) => skill(r, "flagged", "disable-model-invocation: true\n"));
-    expect(() => check(root)).toThrow(/skills\/flagged\/SKILL\.md: disable-model-invocation: true breaks/);
+  test("disable-model-invocation on a skill the routing hooks invoke fails and names the file", () => {
+    const root = plugin((r) => skill(r, "tdd", "disable-model-invocation: true\n"));
+    expect(() => check(root)).toThrow(/skills\/tdd\/SKILL\.md: the routing hooks invoke tdd with the Skill tool/);
   });
 
-  test("a principle leaf missing user-invocable: false fails", () => {
-    const root = plugin((r) => skill(r, "principle-visible", ""));
-    expect(() => check(root)).toThrow(/principle-visible\/SKILL\.md: principle leaves carry user-invocable: false/);
-  });
-
-  test("a principle leaf carrying disable-model-invocation fails", () => {
-    const root = plugin((r) => skill(r, "principle-dead", "user-invocable: false\ndisable-model-invocation: true\n"));
-    expect(() => check(root)).toThrow(/principle-dead\/SKILL\.md: disable-model-invocation/);
+  test("a mandate that names a skill outside MODEL_ENTRY_SKILLS fails", () => {
+    const mandate = (names) => (r) => {
+      mkdirSync(join(r, "hooks"), { recursive: true });
+      writeFileSync(join(r, "hooks/session-start-context.md"), names.map((n) => `\`pstack:${n}\``).join(", ") + "\n");
+    };
+    expect(() => check(plugin(mandate(MODEL_ENTRY_SKILLS)))).not.toThrow();
+    expect(() => check(plugin(mandate([...MODEL_ENTRY_SKILLS, "babysit"])))).toThrow(/names .*babysit, but MODEL_ENTRY_SKILLS/);
   });
 
   test("a skill dispatching a plugin agent by its bare name fails and names the site", () => {

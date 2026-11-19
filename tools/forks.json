@@ -50,7 +50,7 @@
     },
     "plugins/pstack/skills/poteto-help/SKILL.md": {
       "kind": "port-feature",
-      "why": "Routes installation, model-sheet loading, and persistent routing preferences to the current runtime's setup sources, gives installed playbooks precedence over upstream guides, and keeps the port's public skill loading, hidden principles, verification-skill naming, local-worker advice, driver and built-in equivalents, excluded make-bot-ui row, and orchestrate wording as prose changes in this fork, and routes \"stack them, don't ship\" to Autopilot-stack, because neither autopilot merges.",
+      "why": "Routes installation, model-sheet loading, and persistent routing preferences to the current runtime's setup sources, gives installed playbooks precedence over upstream guides, and keeps the port's public skill loading, principles read by path, verification-skill naming, local-worker advice, driver and built-in equivalents, excluded make-bot-ui row, and orchestrate wording as prose changes in this fork, and routes \"stack them, don't ship\" to Autopilot-stack, because neither autopilot merges.",
       "since": "0.9.71",
       "upstream": "not-proposed"
     },
@@ -396,7 +396,7 @@
     },
     "plugins/pstack/skills/thermos/SKILL.md": {
       "kind": "port-feature",
-      "why": "Sets both reviewers' model from the thermos reviewers line in pstack-models.md, so the override sheet reaches them.",
+      "why": "Sets both reviewers' model from the thermos reviewers line in pstack-models.md, so the override sheet reaches them, and passes each reviewer its rubric's path, because the rubric skills keep upstream's disable-model-invocation and the Skill tool refuses them.",
       "since": "0.9.115",
       "upstream": "not-proposed"
     }
