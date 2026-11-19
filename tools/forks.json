@@ -8,7 +8,7 @@
     },
     "plugins/pstack/skills/architect/SKILL.md": {
       "kind": "policy",
-      "why": "Requires comparing accepted deviations with the saved sketch and rationale, and updating them, before each implementation unit closes.",
+      "why": "Requires a live probe of an external runtime the design plugs into, with each grounding fact labelled live, code, or inference, before the sketch, and requires comparing accepted deviations with the saved sketch and rationale, and updating them, before each implementation unit closes.",
       "since": "0.9.34",
       "upstream": "not-proposed"
     },
