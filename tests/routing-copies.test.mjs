@@ -85,6 +85,13 @@ describe("the routing block in each runtime's copy of the mandate", () => {
     expect(() => plan(root)).toThrow(`${agy}: no routing block`);
   });
 
+  test("a copy whose direct-entry line lost its skill list fails the plan and names the file", () => {
+    const root = repoCopy();
+    const opencode = `${PLUGIN}/hooks/session-start-opencode.md`;
+    edit(root, opencode, (text) => text.replace(/^(When the intent is already specific[^`]*).*$/m, "$1the right skill."));
+    expect(() => plan(root)).toThrow(`${opencode}: no "When the intent is already specific" line with a skill list`);
+  });
+
   test("a mandate without the block fails the plan and names the mandate", () => {
     const root = repoCopy();
     edit(root, MANDATE, (text) => text.replace(BLOCK_OPEN, "when a task needs it."));

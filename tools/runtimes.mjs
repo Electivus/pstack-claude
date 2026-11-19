@@ -307,13 +307,13 @@ export function stampRouting(text, mandate, { file, skill }) {
   const lines = text.split("\n");
   const [start, end] = routingBlock(lines, file);
   const direct = lines.slice(start, end).find((line) => line.startsWith(ROUTING_DIRECT));
-  const lead = direct?.slice(0, direct.indexOf("`"));
-  if (!lead) throw new Error(`${file}: no "${ROUTING_DIRECT}" line with a skill list in its routing block`);
+  const list = direct?.indexOf("`") ?? -1;
+  if (list === -1) throw new Error(`${file}: no "${ROUTING_DIRECT}" line with a skill list in its routing block`);
   const block = source.slice(...routingBlock(source, ROUTING_MANDATE)).map((line) => {
     if (!line.startsWith(ROUTING_DIRECT)) return line;
     const names = [...line.matchAll(/`pstack:([a-z0-9-]+)`/g)].map(([, name]) => name);
     if (!names.length) throw new Error(`${ROUTING_MANDATE}: the "${ROUTING_DIRECT}" line names no pstack: skill`);
-    return `${lead}${names.map((name) => code(skill(name))).join(", ")}.`;
+    return `${direct.slice(0, list)}${names.map((name) => code(skill(name))).join(", ")}.`;
   });
   lines.splice(start, end - start, ...block);
   return lines.join("\n");
