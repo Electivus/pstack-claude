@@ -44,6 +44,14 @@ bun tools/generate.mjs
 bun test tests/
 ```
 
+Then run the lint jobs CI runs, which are Markdown lint, relative links, shell scripts, workflow lint, and the Prettier check on the vendored scripts:
+
+```shell
+bun tools/ci-local.mjs
+```
+
+The script reads each job's command and pinned version from `.github/workflows/ci.yml`, so the two cannot drift. It needs Node (for `npx`), Docker, `shellcheck`, and Bun. A missing tool fails the run and says how to install it, and nothing is skipped. Pass a job name, such as `bun tools/ci-local.mjs markdownlint`, to run one.
+
 After you commit, `bun tools/check-release.mjs origin/main` says whether the change needs a release. See [Releasing](#releasing).
 
 The root `package.json` declares `typebox` and the optional `@earendil-works/pi-coding-agent` as peer dependencies, because Pi provides both to an extension at runtime. The root `bun.lock` pins `typebox` for the generator, which checks hook files against it, and for the tests under `tests/pi/`, which load the extension outside Pi. Those tests load Pi's package as a Pi process does, signal handlers included, from the copy that `plugins/package.json` pins and `plugins/bun.lock` locks. It sits on the extension's module path but outside every plugin and outside the root package that `pi install` installs, so no user downloads it, and npm never resolves it on a user's install.
