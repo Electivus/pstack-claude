@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 // Usage:
+//   node vscode-instance.mjs path <name>
 //   node vscode-instance.mjs setup <instance dir> --session copilot|local [--plugin <dir>]... [--model <id>] [--from <user data dir>]
 //   node vscode-instance.mjs launch <instance dir>
 //   node vscode-instance.mjs send <instance dir> <prompt>
 //   node vscode-instance.mjs quit <instance dir>
 //   node vscode-instance.mjs clean <instance dir> --evidence <dir>
 import { cpSync, existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from "node:fs";
-import { homedir, platform } from "node:os";
+import { homedir, platform, tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { execFileSync, spawnSync } from "node:child_process";
 import { parseArgs } from "node:util";
@@ -29,6 +30,14 @@ function defaultUserDataDir() {
   if (platform() === "darwin") return join(homedir(), "Library/Application Support", name);
   if (platform() === "win32") return join(process.env.APPDATA ?? "", name);
   return join(homedir(), ".config", name);
+}
+
+const MARKER = ".pstack-verify-instance";
+
+// Short on purpose: VS Code puts its main socket under the instance and macOS caps socket paths near 104 bytes, which os.tmpdir() on macOS (/var/folders/...) overruns.
+function instancePath(name) {
+  const root = process.env.PV_ROOT ?? (platform() === "win32" ? tmpdir() : "/tmp");
+  return join(root, `pv-${name}`);
 }
 
 const sqlite = (db, sql) => execFileSync("sqlite3", [db, sql], { encoding: "utf8" }).trim();
@@ -66,6 +75,7 @@ function setup(instance) {
     process.exit(1);
   }
   for (const d of [join(p.user, "globalStorage"), p.extensionsDir, p.workspace]) mkdirSync(d, { recursive: true });
+  writeFileSync(join(instance, MARKER), "created by vscode-instance.mjs setup; clean refuses a directory without this file\n");
 
   const settings = {
     "chat.pluginLocations": Object.fromEntries(values.plugin.map((x) => [resolve(x), true])),
@@ -110,6 +120,10 @@ function quit(instance) {
 }
 
 function clean(instance) {
+  if (!existsSync(join(instance, MARKER))) {
+    console.error(`Refusing to clean ${instance}: it has no ${MARKER} file, so setup did not create it.`);
+    process.exit(1);
+  }
   if (mainPids(paths(instance).userDataDir).length) {
     console.error(`Run quit first: ${instance} is still running.`);
     process.exit(1);
@@ -131,9 +145,14 @@ function clean(instance) {
   return { removed: instance, evidence };
 }
 
+if (command === "path" && dir) {
+  console.log(instancePath(dir));
+  process.exit(0);
+}
+
 const commands = { setup, launch, send: (i) => send(i, prompt), quit, clean };
 if (!commands[command] || !dir || (command === "send" && !prompt)) {
-  console.error("usage: vscode-instance.mjs setup|launch|send|quit|clean <instance dir> [...]");
+  console.error("usage: vscode-instance.mjs path <name> | setup|launch|send|quit|clean <instance dir> [...]");
   process.exit(2);
 }
 console.log(JSON.stringify(commands[command](resolve(dir)), null, 2));

@@ -18,14 +18,14 @@ A Copilot session in VS Code runs the GitHub Copilot build of a VS Code agent pl
 Preconditions:
 
 - `node $V/read-log.mjs policy` shows `chat_agent_enabled: true`.
-- No instance runs at `/private/tmp/claude-501/pv-<name>`.
+- No instance runs at `<instance>`.
 
 - **Probe.** Run `node $V/probe-plugin.mjs <scratch>/cop-<n> --mark hooks/session-start-context.md=<A> --mark rules/pstack-routing.md=<B>`.
-- **Instance.** Run `node $V/vscode-instance.mjs setup /private/tmp/claude-501/pv-<name> --session copilot --plugin <scratch>/cop-<n>/plugin --model claude-haiku-4.5`, then `node $V/vscode-instance.mjs launch /private/tmp/claude-501/pv-<name>`. Setup reports `githubAuthCopied: true`.
-- **Ready.** Wait until `grep -q "Found [0-9]* models" /private/tmp/claude-501/pv-<name>/user-data/logs/*/agenthost.log` succeeds.
-- **Prompt.** Run `node $V/vscode-instance.mjs send /private/tmp/claude-501/pv-<name> "Probe <token>. Call no tools. Quote every line in your context that starts with 'Verification marker:', or say NONE."`. Keep `since` from the output.
+- **Instance.** Run `node $V/vscode-instance.mjs setup <instance> --session copilot --plugin <scratch>/cop-<n>/plugin --model claude-haiku-4.5`, then `node $V/vscode-instance.mjs launch <instance>`. Setup reports `githubAuthCopied: true`.
+- **Ready.** Wait until `grep -q "Found [0-9]* models" <instance>/user-data/logs/*/agenthost.log` succeeds.
+- **Prompt.** Run `node $V/vscode-instance.mjs send <instance> "Probe <token>. Call no tools. Quote every line in your context that starts with 'Verification marker:', or say NONE."`. Keep `since` from the output.
 - **Host record.** Run `node $V/read-log.mjs copilot --since <since> --match <token> --wait 150 --find <A> --find <B>`. `done: true`, `sessionStart` has a context that starts with `<EXTREMELY_IMPORTANT>`, `usedModels` is `["claude-haiku-4.5"]`, `markersInLog` has `<A>: true` and `<B>: false`, and `replies` quotes `<A>`.
-- **Hook run.** Run `node $V/read-log.mjs hooks <scratch>/cop-<n>/hooks.jsonl`. The `sessionStart` command exits 0, and `COPILOT_PLUGIN_ROOT` names `/private/tmp/claude-501/pv-<name>/user-data/agentPlugins/<sanitized path>/<nonce>`.
+- **Hook run.** Run `node $V/read-log.mjs hooks <scratch>/cop-<n>/hooks.jsonl`. The `sessionStart` command exits 0, and `COPILOT_PLUGIN_ROOT` names `<instance>/user-data/agentPlugins/<sanitized path>/<nonce>`.
 - **Cleanup.** Run `quit`, then `clean ... --evidence <scratch>/evidence/<name>`.
 
 ## Gotchas

@@ -17,13 +17,13 @@ A Local session reads pstack as a Claude Code plugin and attaches `rules/pstack-
 Preconditions:
 
 - `node $V/read-log.mjs policy` shows the current `chat_preview_features_enabled`. Record it, because it decides whether hooks run.
-- No instance runs at `/private/tmp/claude-501/pv-<name>`.
+- No instance runs at `<instance>`.
 
 - **Probe.** Run `node $V/probe-plugin.mjs <scratch>/loc-<n> --mark hooks/session-start-context.md=<A> --mark rules/pstack-routing.md=<B>`.
-- **Instance.** Run `node $V/vscode-instance.mjs setup /private/tmp/claude-501/pv-<name> --session local --plugin <scratch>/loc-<n>/plugin`, then `launch`. The `false` harness settings make Local the session type, so no picker click is needed.
+- **Instance.** Run `node $V/vscode-instance.mjs setup <instance> --session local --plugin <scratch>/loc-<n>/plugin`, then `launch`. The `false` harness settings make Local the session type, so no picker click is needed.
 - **Ready.** Wait for `Found [0-9]* models` in the instance's `agenthost.log`.
-- **Prompt.** Run `node $V/vscode-instance.mjs send /private/tmp/claude-501/pv-<name> "Probe <token>. Call no tools. Quote every line in your context that starts with 'Verification marker:', or say NONE."`.
-- **Host record.** Run `node $V/read-log.mjs local --since <since> --match <token> --wait 150 --user-data-dir /private/tmp/claude-501/pv-<name>/user-data --find <A> --find <B>`. `customizations` has `[applying] pstack-routing.md — automatically attached as pattern is **` and the four `[custom-agent]` entries, `contextIncluded` names `pstack-routing.md`, `markersInLog` has `<B>: true` and `<A>: false`, and `replies` quotes `<B>`.
+- **Prompt.** Run `node $V/vscode-instance.mjs send <instance> "Probe <token>. Call no tools. Quote every line in your context that starts with 'Verification marker:', or say NONE."`.
+- **Host record.** Run `node $V/read-log.mjs local --since <since> --match <token> --wait 150 --user-data-dir <instance>/user-data --find <A> --find <B>`. `customizations` has `[applying] pstack-routing.md — automatically attached as pattern is **` and the four `[custom-agent]` entries, `contextIncluded` names `pstack-routing.md`, `markersInLog` has `<B>: true` and `<A>: false`, and `replies` quotes `<B>`.
 - **Hook run.** Run `node $V/read-log.mjs hooks <scratch>/loc-<n>/hooks.jsonl`. With chat preview features off it prints `[]`.
 - **Cleanup.** Run `quit`, then `clean ... --evidence <scratch>/evidence/<name>`, which keeps the debug log.
 

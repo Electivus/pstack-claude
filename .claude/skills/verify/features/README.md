@@ -13,7 +13,7 @@ This directory is the maintained source for proving what pstack delivers in each
 - `claude`, `code-insiders`, `node`, and `sqlite3` are on `PATH`.
 - The user's VS Code Insiders is signed in to GitHub with Copilot access.
 - Each probe uses a new directory from `probe-plugin.mjs` and new marker words.
-- Each VS Code run uses its own instance under `/private/tmp/claude-501/pv-<name>`.
+- Each VS Code run uses its own instance under the directory `node $V/vscode-instance.mjs path <name>` prints (a short `pv-<name>` under `/tmp`, or `$PV_ROOT`).
 
 ## Driving conventions
 
