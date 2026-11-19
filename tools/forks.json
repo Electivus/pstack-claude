@@ -92,7 +92,7 @@
     },
     "plugins/pstack/skills/poteto-mode/playbooks/feature.md": {
       "kind": "policy",
-      "why": "Gives every file-writing delegate its own worktree, based on the branch's HEAD when it builds on unmerged commits, and forbids writing in a worktree a delegate still holds.",
+      "why": "Gives every file-writing delegate its own worktree, based on the branch's HEAD when it builds on unmerged commits, forbids writing in a worktree a delegate still holds, and puts the CI lint and static-check commands in a code delegate's success criteria.",
       "since": "0.9.39",
       "upstream": "not-proposed"
     },
@@ -104,7 +104,7 @@
     },
     "plugins/pstack/skills/poteto-mode/playbooks/opening-a-pr.md": {
       "kind": "policy",
-      "why": "Requires stopping every live agent that holds a worktree before committing, merging, or deploying from it, an owner for each deferred follow-up in Scope, and a reply that says merging alone ships nothing when users get the change only through a later release or deploy.",
+      "why": "Requires stopping every live agent that holds a worktree before committing, merging, or deploying from it, running the repo's CI lint and static checks locally at their pinned versions before the first push, an owner for each deferred follow-up in Scope, and a reply that says merging alone ships nothing when users get the change only through a later release or deploy.",
       "since": "0.9.10",
       "upstream": "not-proposed"
     },
