@@ -50,7 +50,7 @@ Then run the lint jobs CI runs, which are Markdown lint, relative links, shell s
 bun tools/ci-local.mjs
 ```
 
-The script reads each job's command and pinned version from `.github/workflows/ci.yml`, so the two cannot drift. It needs Node (for `npx`), Docker, `shellcheck`, and Bun. A missing tool fails the run and says how to install it, and nothing is skipped. Pass a job name, such as `bun tools/ci-local.mjs markdownlint`, to run one.
+The script reads each job's command and pinned version from `.github/workflows/ci.yml`, so the two cannot drift. It runs the jobs in a temporary copy of the files git tracks plus any untracked file that is not ignored, as CI's checkout sees them, so ignored directories such as nested `.claude/worktrees` stay out of the lint. A step field it cannot reproduce, such as a non-bash `shell`, fails the run and names the job and field. It needs Node (for `npx`), Docker, `shellcheck`, and Bun. A missing tool fails the run and says how to install it, and nothing is skipped. Pass a job name, such as `bun tools/ci-local.mjs markdownlint`, to run one.
 
 After you commit, `bun tools/check-release.mjs origin/main` says whether the change needs a release. See [Releasing](#releasing).
 
