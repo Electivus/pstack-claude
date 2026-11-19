@@ -1,4 +1,4 @@
-// setup-pstack's check-sheet.sh, run for real. It shares sheet.awk with the
+// setup-pstack's check-sheet.mjs, run for real. It shares sheet.mjs with the
 // GitHub Copilot SessionStart hook, so a sheet it passes is one the hook adds
 // to the session context.
 import { afterAll, describe, expect, test } from "bun:test";
@@ -9,7 +9,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const pluginRoot = fileURLToPath(new URL("../plugins/pstack/", import.meta.url));
-const script = join(pluginRoot, "skills/setup-pstack/scripts/check-sheet.sh");
+const script = join(pluginRoot, "skills/setup-pstack/scripts/check-sheet.mjs");
 const models = JSON.parse(readFileSync(join(pluginRoot, "models.json"), "utf8"));
 const roles = models.roles.map((r) => r.role);
 
@@ -24,13 +24,13 @@ const sheet = (set, extra = []) => ["# pstack model overrides", "", ...lines(set
 
 function check(text, env = {}, args = [sheetPath]) {
   if (text !== undefined) writeFileSync(sheetPath, text);
-  const r = spawnSync("sh", [script, ...args], { env: { PATH: process.env.PATH, HOME: home, ...env }, encoding: "utf8" });
+  const r = spawnSync("node", [script, ...args], { env: { PATH: process.env.PATH, HOME: home, ...env }, encoding: "utf8" });
   return { status: r.status, out: r.stdout, err: r.stderr };
 }
 const ok = { status: 0, out: "sheet ok\n", err: "" };
 const invalid = (problems) => ({ status: 1, out: `sheet invalid: ${problems}\n`, err: "" });
 
-describe("check-sheet.sh", () => {
+describe("check-sheet.mjs", () => {
   test("passes a sheet with every role", () => expect(check(sheet())).toEqual(ok));
 
   test("reports a sheet it cannot decode", () => {

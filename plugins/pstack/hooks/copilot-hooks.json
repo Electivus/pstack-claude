@@ -6,8 +6,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "sh \"${COPILOT_PLUGIN_ROOT}/hooks/session-start.sh\" copilot",
-            "powershell": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"$env:COPILOT_PLUGIN_ROOT/hooks/session-start.ps1\" copilot"
+            "command": "node \"${COPILOT_PLUGIN_ROOT}/hooks/session-start.mjs\" copilot",
+            "powershell": "node \"$env:COPILOT_PLUGIN_ROOT/hooks/session-start.mjs\" copilot"
           }
         ]
       }
@@ -18,7 +18,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "sh \"${COPILOT_PLUGIN_ROOT}/hooks/pre-tool-use.sh\"",
+            "command": "node \"${COPILOT_PLUGIN_ROOT}/hooks/pre-tool-use.mjs\" || exit 0",
             "powershell": "exit 0",
             "timeout": 5
           }

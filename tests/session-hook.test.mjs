@@ -135,10 +135,10 @@ describe("SessionStart hook", () => {
 
   for (const arg of ["cursor", ""]) {
     test(`fails on runtime argument ${JSON.stringify(arg)}`, () => {
-      const r = runHook("claude", null, `"\${CLAUDE_PLUGIN_ROOT}/hooks/session-start.sh" ${arg}`);
+      const r = runHook("claude", null, `node "\${CLAUDE_PLUGIN_ROOT}/hooks/session-start.mjs" ${arg}`);
       expect(r.status).not.toBe(0);
       expect(r.out).toBe("");
-      expect(r.err.trimEnd().split("\n")).toEqual([`session-start.sh: unknown runtime '${arg}' (expected agy, claude, codex, copilot, or muse)`]);
+      expect(r.err.trimEnd().split("\n")).toEqual([`session-start.mjs: unknown runtime '${arg}' (expected agy, claude, codex, copilot, or muse)`]);
     });
   }
 
@@ -244,10 +244,8 @@ function copilotContext(sheet) {
 describe("Copilot SessionStart context", () => {
   test("the Copilot manifest names its own hooks file", () => {
     expect(copilotManifest.hooks).toBe("hooks/copilot-hooks.json");
-    expect(sessionStart.copilot.hooks[0].command).toBe('sh "${COPILOT_PLUGIN_ROOT}/hooks/session-start.sh" copilot');
-    expect(sessionStart.copilot.hooks[0].powershell).toBe(
-      'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$env:COPILOT_PLUGIN_ROOT/hooks/session-start.ps1" copilot',
-    );
+    expect(sessionStart.copilot.hooks[0].command).toBe('node "${COPILOT_PLUGIN_ROOT}/hooks/session-start.mjs" copilot');
+    expect(sessionStart.copilot.hooks[0].powershell).toBe('node "$env:COPILOT_PLUGIN_ROOT/hooks/session-start.mjs" copilot');
   });
 
   test("a valid sheet adds every role line, in models.json order, and no setup note", () => {
@@ -316,7 +314,7 @@ describe("Copilot SessionStart context", () => {
     try {
       cpSync(join(pluginRoot, "hooks"), join(root, "hooks"), { recursive: true });
       cpSync(join(pluginRoot, "skills/setup-pstack/scripts"), join(root, "skills/setup-pstack/scripts"), { recursive: true });
-      chmodSync(join(root, "hooks/session-start.sh"), 0o644);
+      chmodSync(join(root, "hooks/session-start.mjs"), 0o644);
       const r = spawnSync("sh", ["-c", sessionStart.copilot.hooks[0].command], {
         env: { PATH: process.env.PATH, HOME: root, COPILOT_PLUGIN_ROOT: root },
         encoding: "utf8",
@@ -386,7 +384,7 @@ describe("Copilot SessionStart context", () => {
 
 const museMandate = readFileSync(join(pluginRoot, "hooks/session-start-muse.md"), "utf8");
 // The note as the hook prints it, line ending included: a Windows checkout
-// may give it CRLF, which muse-context.awk keeps.
+// may give it CRLF, which the hook keeps.
 const museSheetNote = readFileSync(join(pluginRoot, "hooks/session-start-muse-sheet.md"), "utf8");
 
 // Muse declares the hook inline in its native manifest and runs it with
@@ -415,20 +413,6 @@ function runMuseHook(sheet, env = {}, plugin = pluginRoot) {
 }
 
 describe("Muse SessionStart context", () => {
-  test("injects nothing under a Windows sh, where the PowerShell hook owns Muse", () => {
-    const bin = mkdtempSync(join(tmpdir(), "pstack-hook-bin-"));
-    try {
-      writeFileSync(join(bin, "uname"), "#!/bin/sh\necho MINGW64_NT-10.0\n", { mode: 0o755 });
-      expect(runMuseHook(null, { PATH: `${bin}:${process.env.PATH}` })).toEqual({ status: 0, out: "", err: "" });
-    } finally {
-      rmSync(bin, { recursive: true, force: true });
-    }
-  });
-
-  test("injects nothing when OS names Windows, for a Windows sh with no uname", () => {
-    expect(runMuseHook(null, { OS: "Windows_NT" })).toEqual({ status: 0, out: "", err: "" });
-  });
-
   test("injects the Muse mandate when no sheet exists", () => {
     expect(runMuseHook(null)).toEqual({ status: 0, out: museMandate, err: "" });
   });
@@ -466,35 +450,5 @@ describe("Muse SessionStart context", () => {
     const skills = new Set(agentSkills(join(pluginRoot, "skills")).map(({ name }) => name));
     expect(named).toContain("poteto-mode");
     expect(named.filter((name) => !skills.has(name))).toEqual([]);
-  });
-});
-
-// awk expands escapes in a -v value, so a hooks directory passed that way
-// turns `\t` in the plugin root into a tab and the mandate files go unread.
-describe("a plugin root with a backslash", () => {
-  test("loads the same Copilot and Muse context as any other root", () => {
-    const tmp = mkdtempSync(join(tmpdir(), "pstack-hook-"));
-    const root = join(tmp, "back\\tslash", "pstack");
-    try {
-      for (const dir of ["hooks", "skills/setup-pstack/scripts"]) cpSync(join(pluginRoot, dir), join(root, dir), { recursive: true });
-      const run = (runtime, rootVar, from) =>
-        spawnSync("sh", [join(from, "hooks/session-start.sh"), runtime], {
-          env: { PATH: process.env.PATH, HOME: tmp, [rootVar]: from },
-          encoding: "utf8",
-        });
-      for (const [runtime, rootVar] of [["copilot", "COPILOT_PLUGIN_ROOT"], ["muse", "MUSE_PLUGIN_ROOT"]]) {
-        const expected = run(runtime, rootVar, pluginRoot);
-        expect(expected.stdout).toContain("poteto-mode");
-        const got = run(runtime, rootVar, root);
-        expect({ runtime, status: got.status, out: got.stdout, err: got.stderr }).toEqual({
-          runtime,
-          status: 0,
-          out: expected.stdout,
-          err: "",
-        });
-      }
-    } finally {
-      rmSync(tmp, { recursive: true, force: true });
-    }
   });
 });

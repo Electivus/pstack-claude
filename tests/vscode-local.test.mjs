@@ -184,7 +184,7 @@ describe("the two VS Code session types", () => {
 
   test("setup-pstack tells the Local agent not to run the Copilot sheet checker on a Local sheet", () => {
     const local = setup.slice(setup.indexOf("## VS Code Local agent"), setup.indexOf("## Muse"));
-    expect(local).toContain("Do not run `check-sheet.sh`");
+    expect(local).toContain("Do not run `check-sheet.mjs`");
     expect(local).toContain("pstack-list-models");
   });
 });

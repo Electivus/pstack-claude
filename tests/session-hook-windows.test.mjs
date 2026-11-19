@@ -1,320 +1,145 @@
+// The SessionStart hook on Windows with no sh and no PowerShell on PATH. Muse
+// spawns its argv with no shell, Codex substitutes the plugin root into its
+// command text and runs it through cmd when no PowerShell exists, and Claude
+// Code runs its command through Git Bash.
 import { describe, expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { MUSE_HOOKS } from "../tools/runtimes.mjs";
 import { roleCases, sheetCases, writeSheet } from "./session-hook-sheets.mjs";
 
 const pluginRoot = fileURLToPath(new URL("../plugins/pstack/", import.meta.url));
-const manifest = JSON.parse(readFileSync(join(pluginRoot, ".codex-plugin/plugin.json"), "utf8"));
-const handler = JSON.parse(readFileSync(join(pluginRoot, manifest.hooks), "utf8")).hooks.SessionStart[0].hooks[0];
-const mandate = readFileSync(join(pluginRoot, "hooks/session-start-context.md"), "utf8");
-
-function windowsHookEnv(fixture, profile) {
-  const env = {
-    SystemRoot: process.env.SystemRoot,
-    PATH: join(process.env.SystemRoot, "System32/WindowsPowerShell/v1.0"),
-    PATHEXT: process.env.PATHEXT,
-    USERPROFILE: profile,
-    HOME: join(fixture, "other home"),
-    PSExecutionPolicyPreference: "Restricted",
-  };
-  for (const name of ["TEMP", "TMP", "LOCALAPPDATA", "APPDATA", "ProgramData", "PSModulePath"]) {
-    if (process.env[name] !== undefined) env[name] = process.env[name];
-  }
-  return env;
-}
-
-function runHook({ sheet, codexHome, homeSheet, context = mandate, host = "cmd" } = {}) {
-  const fixture = mkdtempSync(join(tmpdir(), "pstack windows hook "));
-  try {
-    const plugin = join(fixture, "plugin with spaces");
-    const profile = join(fixture, "user profile");
-    const sheetRoot = codexHome ? join(fixture, "codex home") : join(profile, ".codex");
-    cpSync(join(pluginRoot, "hooks"), join(plugin, "hooks"), { recursive: true });
-    for (const [dir, content] of [[join(profile, ".codex"), homeSheet], [sheetRoot, sheet]]) {
-      if (content !== undefined) {
-        mkdirSync(dir, { recursive: true });
-        writeSheet(join(dir, "pstack-models.md"), content);
-      }
-    }
-    const contextPath = join(plugin, "hooks/session-start-context.md");
-    if (context === null) rmSync(contextPath);
-    else writeFileSync(contextPath, context);
-    const command = handler.commandWindows.replaceAll("${CLAUDE_PLUGIN_ROOT}", plugin);
-    const env = { ...windowsHookEnv(fixture, profile), CLAUDE_PLUGIN_ROOT: plugin };
-    if (codexHome !== undefined) env.CODEX_HOME = codexHome ? sheetRoot : "";
-    const executable = host === "cmd" ? process.env.ComSpec ?? "cmd.exe" : "powershell.exe";
-    const args = host === "cmd" ? ["/d", "/s", "/c", command] : ["-NoProfile", "-EncodedCommand", Buffer.from(command, "utf16le").toString("base64")];
-    const result = spawnSync(executable, args, {
-      env,
-      encoding: "utf8",
-      windowsVerbatimArguments: host === "cmd",
-    });
-    if (result.error) throw result.error;
-    return { status: result.status, out: result.stdout, err: result.stderr };
-  } finally {
-    rmSync(fixture, { recursive: true, force: true });
-  }
-}
+const read = (rel) => readFileSync(join(pluginRoot, rel), "utf8");
+const hookOf = (file) => JSON.parse(read(file)).hooks.SessionStart[0].hooks[0];
+const codex = hookOf(JSON.parse(read(".codex-plugin/plugin.json")).hooks);
+const copilot = hookOf(JSON.parse(read(".github/plugin/plugin.json")).hooks);
+const claude = hookOf("hooks/hooks.json");
+const muse = MUSE_HOOKS.find((hook) => hook.id === "session-start").command;
+const mandate = read("hooks/session-start-context.md");
+const museMandate = read("hooks/session-start-muse.md");
+// The note as the hook prints it, line ending included.
+const museSheetNote = read("hooks/session-start-muse-sheet.md");
+const models = JSON.parse(read("models.json"));
 
 // CI's Windows job sets this, so a platform check that misfires fails there
 // instead of skipping every test.
 const required = process.env.PSTACK_REQUIRE_WINDOWS_HOOK === "1";
+const onWindows = process.platform === "win32" || required;
+const systemRoot = process.env.SystemRoot ?? "C:\\Windows";
+const nodeDir = onWindows ? dirname(spawnSync("node", ["-p", "process.execPath"], { encoding: "utf8" }).stdout.trim()) : "";
+const gitBash = join(process.env.ProgramFiles ?? "C:\\Program Files", "Git", "bin", "bash.exe");
 
-describe.skipIf(process.platform !== "win32" && !required)("Windows Codex SessionStart hook", () => {
-  test("injects the shared context without a sheet or Bash", () => {
-    expect(runHook()).toEqual({ status: 0, out: mandate, err: "" });
-    const result = runHook({ host: "powershell" });
-    expect({ ...result, out: result.out.replaceAll("\r\n", "\n") }).toEqual({ status: 0, out: mandate.replaceAll("\r\n", "\n"), err: "" });
-  });
-
-  test("reads USERPROFILE when CODEX_HOME is absent or empty", () => {
-    for (const codexHome of [undefined, false]) {
-      expect(runHook({ codexHome, sheet: "session hook: off\n" })).toEqual({ status: 0, out: "", err: "" });
-    }
-  });
-
-  test("CODEX_HOME takes precedence over USERPROFILE", () => {
-    expect(runHook({ codexHome: true, sheet: "session hook: off\r\n", homeSheet: "session hook: on\n" })).toEqual({
-      status: 0, out: "", err: "",
-    });
-    expect(runHook({ codexHome: true, sheet: "session hook: on\n", homeSheet: "session hook: off\n" })).toEqual({
-      status: 0, out: mandate, err: "",
-    });
-  });
-
-  for (const { name, sheet, off } of sheetCases) {
-    test(`${off ? "injects nothing" : "injects the context"} when the sheet has ${name}`, () => {
-      expect(runHook({ sheet })).toEqual({ status: 0, out: off ? "" : mandate, err: "" });
-    });
-  }
-
-  test("writes UTF-8 context without an added newline", () => {
-    const context = "Routing context: 中文 café 🚀";
-    expect(runHook({ context })).toEqual({ status: 0, out: context, err: "" });
-  });
-
-  test("fails when the context cannot be read", () => {
-    const result = runHook({ context: null });
-    expect(result.status).not.toBe(0);
-    expect(result.out).toBe("");
-    expect(result.err).not.toBe("");
-  });
-
-  for (const arg of ["cursor", ""]) {
-    test(`fails on runtime argument ${JSON.stringify(arg)}`, () => {
-      const script = join(pluginRoot, "hooks/session-start.ps1");
-      const args = ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", script, ...(arg ? [arg] : [])];
-      const r = spawnSync("powershell.exe", args, { encoding: "utf8" });
-      expect({ status: r.status, out: r.stdout, err: r.stderr.trimEnd() }).toEqual({
-        status: 2,
-        out: "",
-        err: `session-start.ps1: unknown runtime '${arg}' (expected codex, copilot, or muse)`,
-      });
-    });
-  }
-});
-
-// Muse spawns the hook's argv itself, with no shell between, from the plugin
-// root that the manifest's relative script path implies. This runner does the
-// same, with only the PowerShell directory on PATH, the harness PATH shape
-// that broke the sh hook on Windows.
-const museCommand = MUSE_HOOKS.find((hook) => hook.id === "session-start-windows").command;
-const museMandate = readFileSync(join(pluginRoot, "hooks/session-start-muse.md"), "utf8");
-// The note as the hook prints it, line ending included: a Windows checkout
-// may give it CRLF, which muse-context.awk keeps.
-const museSheetNote = readFileSync(join(pluginRoot, "hooks/session-start-muse-sheet.md"), "utf8");
-
-function runMuseHook({ sheet, xdg, context = museMandate, pluginRootEnv, omitUserProfile } = {}) {
-  const fixture = mkdtempSync(join(tmpdir(), "pstack windows muse hook "));
+// A plugin copy under a path with spaces, a user profile, and the hook's
+// environment: node and System32 on PATH, which holds cmd and no PowerShell.
+function run({ via, command, sheet, sheetAt, env = {}, context }) {
+  const fixture = mkdtempSync(join(tmpdir(), "pstack windows hook "));
   try {
     const plugin = join(fixture, "plugin with spaces");
     const profile = join(fixture, "user profile");
-    const xdgRoot = join(fixture, "xdg config");
-    cpSync(join(pluginRoot, "hooks"), join(plugin, "hooks"), { recursive: true });
-    cpSync(join(pluginRoot, "models.json"), join(plugin, "models.json"));
+    for (const dir of ["hooks", "skills/setup-pstack/scripts"]) cpSync(join(pluginRoot, dir), join(plugin, dir), { recursive: true });
+    if (context !== undefined) writeFileSync(join(plugin, "hooks/session-start-context.md"), context);
     if (sheet !== undefined) {
-      const dir = join(xdg ? xdgRoot : join(profile, ".config"), "muse");
-      mkdirSync(dir, { recursive: true });
-      writeSheet(join(dir, "pstack-models.md"), sheet);
+      const path = sheetAt({ profile, fixture });
+      mkdirSync(dirname(path), { recursive: true });
+      writeSheet(path, sheet);
     }
-    const contextPath = join(plugin, "hooks/session-start-muse.md");
-    if (context === null) rmSync(contextPath);
-    else writeFileSync(contextPath, context);
-    const env = { ...windowsHookEnv(fixture, profile), MUSE_PLUGIN_ROOT: pluginRootEnv ?? plugin };
-    if (xdg) env.XDG_CONFIG_HOME = xdgRoot;
-    if (omitUserProfile) delete env.USERPROFILE;
-    const [program, ...args] = museCommand;
-    const result = spawnSync(program, args, { cwd: plugin, env, encoding: "utf8" });
+    const base = {
+      SystemRoot: systemRoot,
+      PATH: `${nodeDir};${join(systemRoot, "System32")}`,
+      PATHEXT: process.env.PATHEXT,
+      TEMP: process.env.TEMP,
+      TMP: process.env.TMP,
+      USERPROFILE: profile,
+      HOME: join(fixture, "other home"),
+    };
+    const vars = { ...base, ...(typeof env === "function" ? env({ profile, fixture, plugin }) : env) };
+    for (const name of Object.keys(vars)) if (vars[name] === undefined) delete vars[name];
+    const text = typeof command === "string" ? command.replaceAll(/\$\{[A-Z_]+_PLUGIN_ROOT\}/g, plugin) : command;
+    const result =
+      via === "cmd"
+        ? spawnSync(process.env.ComSpec ?? "cmd.exe", ["/d", "/s", "/c", text], { env: vars, windowsVerbatimArguments: true })
+        : via === "bash"
+          ? spawnSync(gitBash, ["-c", command], { env: { ...vars, CLAUDE_PLUGIN_ROOT: plugin } })
+          : spawnSync(text[0], text.slice(1), { cwd: plugin, env: { ...vars, MUSE_PLUGIN_ROOT: plugin } });
     if (result.error) throw result.error;
-    return { status: result.status, out: result.stdout, err: result.stderr };
+    return { status: result.status, out: result.stdout.toString("utf8"), err: result.stderr.toString("utf8") };
   } finally {
     rmSync(fixture, { recursive: true, force: true });
   }
 }
 
-describe.skipIf(process.platform !== "win32" && !required)("Windows Muse SessionStart hook", () => {
-  test("injects the Muse mandate without a sheet or sh", () => {
-    expect(runMuseHook()).toEqual({ status: 0, out: museMandate, err: "" });
+const inProfile = (...rel) => ({ profile }) => join(profile, ...rel);
+
+describe.skipIf(!onWindows)("Windows SessionStart hook without PowerShell", () => {
+  test("the hook environment cannot find PowerShell", () => {
+    const where = spawnSync(join(systemRoot, "System32", "where.exe"), ["powershell", "pwsh"], {
+      env: { SystemRoot: systemRoot, PATH: `${nodeDir};${join(systemRoot, "System32")}`, PATHEXT: process.env.PATHEXT },
+    });
+    expect(where.status).not.toBe(0);
+  });
+
+  test("Codex's command runs through cmd and injects the mandate", () => {
+    expect(run({ via: "cmd", command: codex.command })).toEqual({ status: 0, out: mandate, err: "" });
   });
 
   for (const { name, sheet, off } of sheetCases) {
-    test(`${off ? "injects nothing" : "injects the mandate"} when the sheet has ${name}`, () => {
-      const result = runMuseHook({ sheet });
-      expect({ status: result.status, injected: result.out.startsWith(museMandate), err: result.err }).toEqual({
-        status: 0,
-        injected: !off,
-        err: "",
+    test(`Codex ${off ? "injects nothing" : "injects the mandate"} when the sheet has ${name}`, () => {
+      expect(run({ via: "cmd", command: codex.command, sheet, sheetAt: inProfile(".codex", "pstack-models.md") })).toEqual({
+        status: 0, out: off ? "" : mandate, err: "",
       });
     });
   }
+
+  test("CODEX_HOME takes precedence over USERPROFILE, and an empty one falls back", () => {
+    const sheetAt = ({ fixture }) => join(fixture, "codex home", "pstack-models.md");
+    const codexHome = ({ fixture }) => ({ CODEX_HOME: join(fixture, "codex home") });
+    expect(run({ via: "cmd", command: codex.command, sheet: "session hook: off\r\n", sheetAt, env: codexHome }).out).toBe("");
+    expect(run({ via: "cmd", command: codex.command, sheet: "session hook: off\n", sheetAt: inProfile(".codex", "pstack-models.md"), env: { CODEX_HOME: "" } }).out).toBe("");
+  });
+
+  test("writes UTF-8 context byte for byte", () => {
+    const context = "Routing context: 中文 café 🚀";
+    expect(run({ via: "cmd", command: codex.command, context })).toEqual({ status: 0, out: context, err: "" });
+  });
+
+  test("fails on an unknown runtime", () => {
+    const r = run({ via: "cmd", command: codex.command.replace(/ codex$/, " cursor") });
+    expect({ status: r.status, out: r.out, err: r.err.trimEnd() }).toEqual({
+      status: 2, out: "", err: "session-start.mjs: unknown runtime 'cursor' (expected agy, claude, codex, copilot, or muse)",
+    });
+  });
+
+  test("Copilot's command adds a valid sheet's role lines", () => {
+    const sheet = Buffer.from(`\ufeff${models.roles.map(({ role, models: tier }) => `${role}: ${tier === "panel" ? "gpt-5.5, claude-opus-5" : "gpt-5.5"}`).join("\r\n")}\r\n`, "utf16le");
+    const r = run({ via: "cmd", command: copilot.command, sheet, sheetAt: inProfile(".copilot", "pstack-models.md") });
+    expect({ status: r.status, err: r.err }).toEqual({ status: 0, err: "" });
+    expect(JSON.parse(r.out).additionalContext).toContain("\nbug-fix: gpt-5.5\n");
+  });
+
+  test("Muse's argv runs with no shell and injects the mandate", () => {
+    expect(run({ via: "argv", command: muse })).toEqual({ status: 0, out: museMandate, err: "" });
+  });
 
   for (const { name, sheet, roles } of roleCases) {
-    test(`adds ${roles.length ? roles.join(", ") : "no role lines"} for a sheet with ${name}`, () => {
+    test(`Muse adds ${roles.length ? roles.join(", ") : "no role lines"} for a sheet with ${name}`, () => {
       const out = roles.length ? `${museMandate}\n${museSheetNote}${roles.join("\n")}\n` : museMandate;
-      expect(runMuseHook({ sheet })).toEqual({ status: 0, out, err: "" });
+      expect(run({ via: "argv", command: muse, sheet, sheetAt: inProfile(".config", "muse", "pstack-models.md") })).toEqual({ status: 0, out, err: "" });
     });
   }
 
-  test("XDG_CONFIG_HOME moves the sheet, and USERPROFILE is the fallback", () => {
-    expect(runMuseHook({ sheet: "session hook: off\n", xdg: true })).toEqual({ status: 0, out: "", err: "" });
-    expect(runMuseHook({ sheet: "session hook: off\n" })).toEqual({ status: 0, out: "", err: "" });
+  test("Muse reads XDG_CONFIG_HOME, and finds the profile without a USERPROFILE variable", () => {
+    const sheetAt = ({ fixture }) => join(fixture, "xdg", "muse", "pstack-models.md");
+    expect(run({ via: "argv", command: muse, sheet: "session hook: off\n", sheetAt, env: ({ fixture }) => ({ XDG_CONFIG_HOME: join(fixture, "xdg") }) }).out).toBe("");
+    expect(run({ via: "argv", command: muse, env: { USERPROFILE: undefined } })).toEqual({ status: 0, out: museMandate, err: "" });
   });
 
-  test("finds the sheet without a USERPROFILE variable, as under Muse's hook environment", () => {
-    expect(runMuseHook({ sheet: "session hook: off\n", xdg: true, omitUserProfile: true })).toEqual({
-      status: 0,
-      out: "",
-      err: "",
-    });
-    expect(runMuseHook({ xdg: true, omitUserProfile: true })).toEqual({ status: 0, out: museMandate, err: "" });
-  });
-
-  test("injects nothing when Muse runs on Linux and interop reaches powershell.exe", () => {
-    expect(runMuseHook({ pluginRootEnv: "/home/someone/.local/share/muse/plugins/cache/pstack/package" })).toEqual({
-      status: 0,
-      out: "",
-      err: "",
-    });
-  });
-
-  test("writes UTF-8 context and ends it with a newline, as the sh hook does", () => {
-    const context = "Routing context: 中文 café 🚀";
-    expect(runMuseHook({ context })).toEqual({ status: 0, out: `${context}\n`, err: "" });
-  });
-
-  test("fails when the mandate cannot be read", () => {
-    const result = runMuseHook({ context: null });
-    expect(result.status).not.toBe(0);
-    expect(result.out).toBe("");
-    expect(result.err).not.toBe("");
-  });
-});
-
-// GitHub Copilot runs a hook's powershell string on Windows in place of its
-// command. This runner does the same, with the plugin root in the environment.
-const copilotHooks = JSON.parse(readFileSync(join(pluginRoot, "hooks/copilot-hooks.json"), "utf8")).hooks;
-const models = JSON.parse(readFileSync(join(pluginRoot, "models.json"), "utf8"));
-const copilotRead = (name) => readFileSync(join(pluginRoot, "hooks", name), "utf8");
-// copilot-context.awk's text() drops only the file's final newline.
-const asText = (text) => text.replace(/\n$/, "");
-const close = "</EXTREMELY_IMPORTANT>";
-
-// The additionalContext copilot-context.awk builds: the mandate with the
-// Copilot notes and the given blocks before its closing tag.
-function copilotContext(...blocks) {
-  const at = mandate.indexOf(close);
-  const notes = [asText(copilotRead("session-start-copilot.md")), ...blocks].join("\n\n");
-  return `${mandate.slice(0, at)}\n${notes}\n${asText(mandate.slice(at))}\n`;
-}
-const setupBlock = asText(copilotRead("session-start-copilot-setup.md"));
-
-const PANEL = "claude-opus-5, gpt-5.5 @xhigh, gemini-3.8-flash";
-const roleLines = (set = {}) =>
-  models.roles.map(({ role, models: tier }) => `${role}: ${role in set ? set[role] : tier === "panel" ? PANEL : "claude-sonnet-5"}`);
-const fullSheet = (lines) => ["# pstack model overrides", "", ...lines, "session hook: on", ""].join("\n");
-
-function runCopilotHook(event, { sheet, input = "" } = {}) {
-  const fixture = mkdtempSync(join(tmpdir(), "pstack windows copilot hook "));
-  try {
-    const plugin = join(fixture, "plugin with spaces");
-    const profile = join(fixture, "user profile");
-    cpSync(join(pluginRoot, "hooks"), join(plugin, "hooks"), { recursive: true });
-    cpSync(join(pluginRoot, "models.json"), join(plugin, "models.json"));
-    if (sheet !== undefined) {
-      mkdirSync(join(profile, ".copilot"), { recursive: true });
-      writeSheet(join(profile, ".copilot", "pstack-models.md"), sheet);
-    }
-    const env = { ...windowsHookEnv(fixture, profile), COPILOT_PLUGIN_ROOT: plugin };
-    const command = copilotHooks[event][0].hooks[0].powershell;
-    const result = spawnSync("powershell.exe", ["-NoProfile", "-EncodedCommand", Buffer.from(command, "utf16le").toString("base64")], {
-      env,
-      input,
-      encoding: "utf8",
-    });
-    if (result.error) throw result.error;
-    return { status: result.status, out: result.stdout, err: result.stderr };
-  } finally {
-    rmSync(fixture, { recursive: true, force: true });
-  }
-}
-
-function copilotSessionContext(sheet) {
-  const r = runCopilotHook("SessionStart", { sheet });
-  expect({ status: r.status, err: r.err }).toEqual({ status: 0, err: "" });
-  const { additionalContext, ...rest } = JSON.parse(r.out);
-  expect(rest).toEqual({});
-  return additionalContext;
-}
-
-describe.skipIf(process.platform !== "win32" && !required)("Windows Copilot SessionStart hook", () => {
-  test("adds setup's note when no sheet exists", () => {
-    expect(copilotSessionContext()).toBe(copilotContext(setupBlock));
-  });
-
-  for (const { name, sheet, off } of sheetCases) {
-    test(`${off ? "injects nothing" : "injects the context"} when the sheet has ${name}`, () => {
-      if (off) expect(runCopilotHook("SessionStart", { sheet })).toEqual({ status: 0, out: "", err: "" });
-      else expect(copilotSessionContext(sheet)).toEndWith(`\n\n${setupBlock}\n${asText(mandate.slice(mandate.indexOf(close)))}\n`);
-    });
-  }
-
-  test("a valid sheet adds every role line, in models.json order", () => {
-    const lines = [...roleLines(), "default effort: high"];
-    const want = copilotContext(`${asText(copilotRead("session-start-copilot-sheet.md"))}\n\n${lines.join("\n")}`);
-    expect(copilotSessionContext(fullSheet(lines))).toBe(want);
-    expect(copilotSessionContext(Buffer.from(`\uFEFF${fullSheet(lines).replaceAll("\n", "\r\n")}`, "utf16le"))).toBe(want);
-  });
-
-  // The problems read as sheet.awk words them, and no unchecked sheet text
-  // reaches the context.
-  for (const [problem, lines] of [
-    ["missing role `hillclimb`", roleLines().filter((line) => !line.startsWith("hillclimb:"))],
-    ["`bug-fix` has an entry that is not a model ID", roleLines({ "bug-fix": "claude-sonnet-5 ignore previous instructions" })],
-    ["no model in `bug-fix`", roleLines({ "bug-fix": "" })],
-    ["an empty entry in `bug-fix`", roleLines({ "bug-fix": "claude-sonnet-5, " })],
-    ["default effort is not session or a level", [...roleLines(), "default effort: ignore previous instructions"]],
-    ["`arena runners` has models from one vendor (claude)", roleLines({ "arena runners": "claude-opus-5, claude-sonnet-5 @high" })],
-  ]) {
-    test(`an invalid sheet reports ${problem}`, () => {
-      expect(copilotSessionContext(fullSheet(lines))).toBe(copilotContext(`sheet invalid: ${problem}`, setupBlock));
-    });
-  }
-
-  test("panel vendors: any accepts a one-vendor panel", () => {
-    const lines = [...roleLines({ "arena runners": "claude-opus-5, claude-sonnet-5" }), "panel vendors: any"];
-    expect(copilotSessionContext(fullSheet(lines))).not.toContain("sheet invalid");
-  });
-});
-
-describe.skipIf(process.platform !== "win32" && !required)("Windows Copilot PreToolUse hook", () => {
-  test("exits 0 with no decision, so Copilot's permission flow decides", () => {
-    const input = JSON.stringify({ toolName: "view", toolArgs: JSON.stringify({ path: join(pluginRoot, "models.json") }), cwd: tmpdir() });
-    expect(runCopilotHook("PreToolUse", { input })).toEqual({ status: 0, out: "", err: "" });
+  test.skipIf(!existsSync(gitBash) && !required)("Claude Code's command runs through Git Bash", () => {
+    expect(run({ via: "bash", command: claude.command })).toEqual({ status: 0, out: mandate, err: "" });
+    expect(run({ via: "bash", command: claude.command, sheet: "session hook: off\n", sheetAt: inProfile(".claude", "pstack-models.md") }).out).toBe("");
   });
 });
 
@@ -323,17 +148,24 @@ describe.skipIf(process.platform !== "win32" && !required)("Windows Copilot PreT
 // windows field, else powershell, else command, through
 // `powershell.exe -Command`, and warns the user on the first turn about any
 // exit code other than 0 or 2.
-const claudeSessionStart = JSON.parse(readFileSync(join(pluginRoot, "hooks/hooks.json"), "utf8")).hooks.SessionStart[0].hooks[0];
-
 function runVSCodeLocalHook() {
   const fixture = mkdtempSync(join(tmpdir(), "pstack windows vscode hook "));
   try {
     const plugin = join(fixture, "plugin with spaces");
     cpSync(join(pluginRoot, "hooks"), join(plugin, "hooks"), { recursive: true });
-    const raw = claudeSessionStart.windows ?? claudeSessionStart.powershell ?? claudeSessionStart.command;
+    const raw = claude.windows ?? claude.powershell ?? claude.command;
     // VS Code quotes a plugin root with spaces as a PowerShell literal.
     const command = raw.replace(/(["']?)\$\{CLAUDE_PLUGIN_ROOT\}([\w./\\~:-]*)\1/g, (_, _quote, rest) => `'${`${plugin}${rest}`.replaceAll("'", "''")}'`);
-    const env = { ...windowsHookEnv(fixture, join(fixture, "user profile")), CLAUDE_PLUGIN_ROOT: plugin, POWERSHELL_UPDATECHECK: "Off" };
+    const env = {
+      SystemRoot: systemRoot,
+      PATH: `${nodeDir};${join(systemRoot, "System32")};${join(systemRoot, "System32", "WindowsPowerShell", "v1.0")}`,
+      PATHEXT: process.env.PATHEXT,
+      TEMP: process.env.TEMP,
+      TMP: process.env.TMP,
+      USERPROFILE: join(fixture, "user profile"),
+      CLAUDE_PLUGIN_ROOT: plugin,
+      POWERSHELL_UPDATECHECK: "Off",
+    };
     const result = spawnSync("powershell.exe", ["-ExecutionPolicy", "Bypass", "-NoProfile", "-NoLogo", "-Command", command], {
       env,
       input: JSON.stringify({ hook_event_name: "SessionStart", source: "new" }),
@@ -346,7 +178,7 @@ function runVSCodeLocalHook() {
   }
 }
 
-describe.skipIf(process.platform !== "win32" && !required)("Windows VS Code Local SessionStart hook", () => {
+describe.skipIf(!onWindows)("Windows VS Code Local SessionStart hook", () => {
   test("exits 0 with no output, so the first Local turn shows no hook warning and the routing rule stays the only mandate", () => {
     expect(runVSCodeLocalHook()).toEqual({ status: 0, out: "", err: "" });
   });

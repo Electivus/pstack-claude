@@ -26,7 +26,7 @@ test("an autocrlf checkout keeps generator inputs current and binary assets inta
     git("checkout-index", "--all", "--force");
 
     expect(readFileSync(join(root, "plugins/pstack/skills/poteto-mode/SKILL.md"), "utf8").includes("\r\n")).toBe(false);
-    expect(readFileSync(join(root, "plugins/pstack/hooks/session-start.sh"), "utf8").includes("\r\n")).toBe(false);
+    expect(readFileSync(join(root, "plugins/pstack/hooks/session-start.mjs"), "utf8").includes("\r\n")).toBe(false);
     expect(readFileSync(join(root, "binary.dat"))).toEqual(binary);
     expect(changes(root, plan(root))).toEqual([]);
     expect(problems(root)).toEqual([]);

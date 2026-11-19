@@ -21,7 +21,7 @@
 //     -> the GitHub Copilot preamble under the same heading, after any Codex one
 //   DRIVER_PLAYBOOKS -> the driver-skill line under each playbook's first heading
 //   plugins/pstack/models.json's roles, again
-//     -> the role list in setup-pstack's scripts/sheet.awk, which checks a Copilot sheet
+//     -> the role list in setup-pstack's scripts/sheet.mjs, which checks a sheet
 //     -> the list of skills that dispatch on role models in hooks/session-start-copilot.md
 //   plugins/pstack/agents/comment-sicko.md, LICENSE, LICENSE-cursor-team-kit,
 //   and NOTICE-skills.md
@@ -337,20 +337,16 @@ const lineStartingWith = (prefix) => (lines) => {
 
 const blankPadded = (body) => ["", ...body.split("\n"), ""];
 
-const SHEET_ROLES_OPEN = "  # Stamped from plugins/pstack/models.json; edit there and rerun tools/generate.mjs.";
+const SHEET_ROLES_OPEN = "// Stamped from plugins/pstack/models.json; edit there and rerun tools/generate.mjs.";
+const SHEET_ROLES_CLOSE = "// End of the stamped lists.";
 const ROLE_SKILLS_LINE = "Skills that dispatch on role models:";
 
-// awk string literals: models.json role labels and effort levels hold no quote
-// or backslash, which parseModels does not check, so check here.
 function sheetRoles(models) {
-  const quote = (s) => {
-    if (/["\\]/.test(s)) throw new Error(`models.json: "${s}" cannot go in an awk string`);
-    return `"${s}"`;
-  };
+  const list = (values) => JSON.stringify(values).replaceAll('","', '", "');
   return [
-    ...models.roles.map((r) => `  roles[++n] = ${quote(r.role)}`),
-    ...models.roles.filter((r) => r.tier === "panel").map((r) => `  panel[${quote(r.role)}] = 1`),
-    ...models.efforts.map((level) => `  SHEET_EFFORT[${quote(level)}] = 1`),
+    `export const ROLES = ${list(models.roles.map((r) => r.role))};`,
+    `const PANELS = new Set(${list(models.roles.filter((r) => r.tier === "panel").map((r) => r.role))});`,
+    `const EFFORTS = new Set(${list(models.efforts)});`,
   ];
 }
 
@@ -404,9 +400,9 @@ export function regions(models) {
       render: () => blankPadded(runtime.modelNames(models)),
     })),
     {
-      file: skillFile("setup-pstack").replace("SKILL.md", "scripts/sheet.awk"),
+      file: skillFile("setup-pstack").replace("SKILL.md", "scripts/sheet.mjs"),
       name: "role list",
-      locate: between(SHEET_ROLES_OPEN, "  return n"),
+      locate: between(SHEET_ROLES_OPEN, SHEET_ROLES_CLOSE),
       render: () => sheetRoles(models),
     },
     {

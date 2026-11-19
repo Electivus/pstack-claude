@@ -48,7 +48,7 @@ describe("validateAgyManifest", () => {
   const options = {
     claude: { name: "pstack" },
     read: () => JSON.stringify(AGY_HOOKS),
-    statOf: (rel) => [manifest.logo, "hooks/session-start.sh"].includes(rel) ? { mode: 0o755, isFile: () => true } : null,
+    statOf: (rel) => [manifest.logo, "hooks/session-start.mjs"].includes(rel) ? { mode: 0o644, isFile: () => true } : null,
   };
 
   test("checks the native manifest and its routing command", () => {
@@ -58,12 +58,9 @@ describe("validateAgyManifest", () => {
     expect(() => validateAgyManifest(manifest, { ...options, read: () => "{}" })).toThrow("pstack-routing.SessionStart");
   });
 
-  test("requires the hook script on every host and execute bits on POSIX", () => {
-    const plain = { ...options, statOf: () => ({ mode: 0o644, isFile: () => true }) };
-    expect(() => validateAgyManifest(manifest, plain)).toThrow("hooks/session-start.sh is not executable");
-    expect(() => validateAgyManifest(manifest, { ...plain, checkExecutable: false })).not.toThrow();
+  test("requires the hook script, which node runs without an execute bit", () => {
     const missing = { ...options, statOf: (rel) => rel === manifest.logo ? options.statOf(rel) : null };
-    expect(() => validateAgyManifest(manifest, { ...missing, checkExecutable: false })).toThrow("hooks/session-start.sh is not a file");
+    expect(() => validateAgyManifest(manifest, missing)).toThrow("hooks/session-start.mjs is not a file");
   });
 });
 
@@ -78,7 +75,7 @@ describe("validateMuseManifest", () => {
       commands: [],
     },
   };
-  const files = new Set(["skills/poteto-mode/SKILL.md", "models.json", ...MUSE_HOOKS.map(({ script }) => script)].map((rel) => `plugins/pstack/${rel}`));
+  const files = new Set(["skills/poteto-mode/SKILL.md", ...MUSE_HOOKS.map(({ script }) => script)].map((rel) => `plugins/pstack/${rel}`));
   const pathExists = (rel) => files.has(rel);
   test("needs the Claude Code name, native compat, existing paths, and each hook script", () => {
     expect(() => validateMuseManifest(ok, { claude, pathExists })).not.toThrow();
@@ -92,12 +89,10 @@ describe("validateMuseManifest", () => {
     const badPath = structuredClone(ok);
     badPath.capabilities.skills[0].path = "skills/nope/SKILL.md";
     expect(() => validateMuseManifest(badPath, { claude, pathExists })).toThrow("is not a file in the plugin");
-    const noScript = (rel) => rel !== "plugins/pstack/hooks/session-start.ps1" && pathExists(rel);
+    const noScript = (rel) => rel !== "plugins/pstack/hooks/session-start.mjs" && pathExists(rel);
     expect(() => validateMuseManifest(ok, { claude, pathExists: noScript })).toThrow(
-      '"session-start-windows" runs hooks/session-start.ps1, which is not in the plugin',
+      '"session-start" runs hooks/session-start.mjs, which is not in the plugin',
     );
-    const noModels = (rel) => rel !== "plugins/pstack/models.json" && pathExists(rel);
-    expect(() => validateMuseManifest(ok, { claude, pathExists: noModels })).toThrow("reads models.json, which is not in the plugin");
   });
 
   test("rejects a command whose id duplicates a skill id", () => {
@@ -308,14 +303,14 @@ describe("validateHooks", () => {
 
   test("accepts exit 0 as the only PowerShell override that names no plugin file", () => {
     const root = "COPILOT_PLUGIN_ROOT";
-    const sh = '"${COPILOT_PLUGIN_ROOT}/hooks/pre-tool-use.sh"';
-    expect(() => validateHooks(hooks(sh, undefined, "exit 0"), { statOf: () => exec, root })).not.toThrow();
+    const node = 'node "${COPILOT_PLUGIN_ROOT}/hooks/pre-tool-use.mjs"';
+    expect(() => validateHooks(hooks(node, undefined, "exit 0"), { statOf: () => plain, root })).not.toThrow();
     for (const ps of [
       'powershell.exe -File "$env:COPILOT_PLUGN_ROOT/hooks/session-start.ps1" copilot',
       'powershell.exe -File "${COPILOT_PLUGIN_ROOT}/hooks/missing.ps1" copilot',
       "Write-Output allow",
     ]) {
-      expect(() => validateHooks(hooks(sh, undefined, ps), { statOf: () => exec, root })).toThrow("does not reference ${COPILOT_PLUGIN_ROOT}");
+      expect(() => validateHooks(hooks(node, undefined, ps), { statOf: () => plain, root })).toThrow("does not reference ${COPILOT_PLUGIN_ROOT}");
     }
   });
 

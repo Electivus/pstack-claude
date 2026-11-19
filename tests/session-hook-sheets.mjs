@@ -1,5 +1,5 @@
 // The off-switch grammar every SessionStart implementation must agree on:
-// session-start.sh, session-start.ps1, Pi's parseSheet, and OpenCode. The sheet is
+// session-start.mjs, check-sheet.mjs, Pi's parseSheet, and OpenCode. The sheet is
 // UTF-8, or UTF-16 LE when it starts with that byte-order mark, which is what
 // Windows PowerShell 5.1's `>` writes. A leading byte-order mark is dropped,
 // lines end at LF, and one CR before the LF is dropped; any other CR is part of
@@ -44,9 +44,7 @@ export const sheetCases = [
   ...(chmodDeniesReads ? [{ name: "no read permission on the file", sheet: NO_READ_PERMISSION, off: false }] : []),
 ];
 
-// The role-line grammar both Muse SessionStart implementations must agree on:
-// session-start.sh, through sheet.awk and muse-context.awk, and
-// session-start.ps1 muse. The sheet decodes as above. A line that starts with
+// The role-line grammar the Muse SessionStart hook follows, through sheet.mjs. The sheet decodes as above. A line that starts with
 // a space or tab is ignored, and the last line for a key wins. A known role's
 // line reaches the context, rebuilt as `role: value`, only when every
 // comma-separated entry is a model ID (`[a-z0-9][a-z0-9.-]*`), `auto`, or

@@ -873,13 +873,13 @@ describe("plan, changes, apply", () => {
     const root = repoCopy();
     const manifest = "plugins/pstack/.github/plugin/plugin.json";
     const hooks = "plugins/pstack/hooks/copilot-hooks.json";
-    writeFileSync(join(root, hooks), readFileSync(join(root, hooks), "utf8").replace("hooks/pre-tool-use.sh", "hooks/gone.sh"));
-    expect(problems(root)).toEqual([expect.stringContaining("hooks/gone.sh does not exist")]);
+    writeFileSync(join(root, hooks), readFileSync(join(root, hooks), "utf8").replace("hooks/pre-tool-use.mjs", "hooks/gone.mjs"));
+    expect(problems(root)).toEqual([expect.stringContaining("hooks/gone.mjs does not exist")]);
     const text = readFileSync(join(root, manifest), "utf8");
     writeFileSync(join(root, manifest), text.replace('"name": "pstack"', '"name": "other"'));
     expect(problems(root)).toEqual([
       expect.stringContaining(`${manifest}: name "other"`),
-      expect.stringContaining("hooks/gone.sh does not exist"),
+      expect.stringContaining("hooks/gone.mjs does not exist"),
     ]);
   });
 
@@ -902,12 +902,12 @@ describe("plan, changes, apply", () => {
     const root = repoCopy();
     const hooks = "plugins/pstack/hooks/hooks.json";
     const text = readFileSync(join(root, hooks), "utf8");
-    writeFileSync(join(root, hooks), text.replace("hooks/session-start.sh", "../../tools/generate.mjs"));
+    writeFileSync(join(root, hooks), text.replace("hooks/session-start.mjs", "../../tools/generate.mjs"));
     expect(problems(root)).toEqual([expect.stringContaining("../../tools/generate.mjs does not exist in the plugin")]);
     const outside = join(scratch("pstack-outside-"), "start.sh");
     writeFileSync(outside, "#!/bin/sh\n", { mode: 0o755 });
     symlinkSync(outside, join(root, "plugins/pstack/hooks/linked.sh"));
-    writeFileSync(join(root, hooks), text.replace("hooks/session-start.sh", "hooks/linked.sh"));
+    writeFileSync(join(root, hooks), text.replace("hooks/session-start.mjs", "hooks/linked.sh"));
     expect(problems(root)).toEqual([expect.stringContaining("hooks/linked.sh does not exist in the plugin")]);
   });
 

@@ -61,15 +61,12 @@ jobs:
           bun-version: "1.4.4"
       - name: Install dependencies
         run: bun install --frozen-lockfile
-      # The runner's first Windows PowerShell launch takes from 2.5 s to over
-      # 10 s, and the run steps above use pwsh, so without this step that cost
-      # lands in the first test. The first ConvertFrom-Json, which the Muse hook
-      # runs on models.json, took 1.5 s to over 10 s in the first Muse test
-      # with a sheet. Paid here, both leave the 10 s timeout to catch a hook
-      # launch that is slow every time.
+      # The VS Code Local test launches powershell.exe, as VS Code does. The
+      # runner's first Windows PowerShell launch takes from 2.5 s to over 10 s,
+      # so it is paid here and the 10 s timeout still catches a slow hook.
       - name: Warm up Windows PowerShell
         shell: powershell
-        run: "'{}' | ConvertFrom-Json | Out-Null"
+        run: exit 0
       - name: Test Windows session hooks
         run: bun test --timeout 10000 tests/session-hook-windows.test.mjs
         env:
@@ -305,7 +302,7 @@ jobs:
           shopt -s extglob failglob
           # shellcheck disable=SC2206 # FILES is a glob to expand here
           files=(test/$FILES.test.ts)
-          JAVA="$(command -v java)" bash "$GITHUB_WORKSPACE/.github/scripts/statechart-watchdog.sh" node --disable-warning=ExperimentalWarning --test ${SELECT:+"$SELECT"} "${files[@]}"
+          JAVA="$(command -v java)" bash "$GITHUB_WORKSPACE/.github/scripts/statechart-watchdog" node --disable-warning=ExperimentalWarning --test ${SELECT:+"$SELECT"} "${files[@]}"
 
   statechart-windows:
     name: Statechart on Windows
@@ -388,8 +385,10 @@ jobs:
       - name: Run shellcheck
         run: |
           shellcheck --version
-          find . -path ./.git -prune -o -path '*/node_modules' -prune -o -name '*.sh' -print |
-            sed 's#^\./##' | sort | tee /dev/stderr | xargs shellcheck --severity=warning
+          # Shell scripts carry no .sh extension, so find them by an sh or bash shebang.
+          git ls-files | while IFS= read -r file; do
+            if head -n 1 -- "$file" | grep -qE '^#!(/usr/bin/env |/bin/)(ba)?sh( |$)'; then printf '%s\n' "$file"; fi
+          done | sort | tee /dev/stderr | xargs shellcheck --severity=warning
 
   actionlint:
     name: Workflow lint

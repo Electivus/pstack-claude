@@ -12,10 +12,10 @@
 # model calls and needs no sign-in. Skips with exit 0 when neither npm nor
 # MCODE is available. CI does not run it.
 #
-#   tests/minimax-smoke.sh                        # installs @minimax-ai/code@0.7.4
-#   MCODE_VERSION=0.7.5 tests/minimax-smoke.sh
-#   MCODE=/path/to/node_modules/.bin/mcode tests/minimax-smoke.sh
-#   KEEP=1 tests/minimax-smoke.sh                 # keep the temp dir; a failed run always keeps it
+#   tests/minimax-smoke                        # installs @minimax-ai/code@0.7.4
+#   MCODE_VERSION=0.7.5 tests/minimax-smoke
+#   MCODE=/path/to/node_modules/.bin/mcode tests/minimax-smoke
+#   KEEP=1 tests/minimax-smoke                 # keep the temp dir; a failed run always keeps it
 set -euo pipefail
 
 if [ -z "${MCODE:-}" ] && ! command -v npm >/dev/null 2>&1; then
