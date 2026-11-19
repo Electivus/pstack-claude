@@ -233,6 +233,21 @@ const rules = [
     phrase: "Before the reply, wait for trunk CI on the last merge commit",
   },
   {
+    source: "#8 a PR's closing issues are recorded and checked before merge",
+    file: "poteto-mode/playbooks/shipping.md",
+    phrase: "Record each PR's intended closing issues beside its head.",
+  },
+  {
+    source: "#8 ship-pr inspect compares the recorded closing issues",
+    file: "poteto-mode/playbooks/shipping.md",
+    phrase: "merge only on `kind: inspected`",
+  },
+  {
+    source: "#9 a body read for write-back drops gh's stderr hint",
+    file: "poteto-mode/playbooks/opening-a-pr.md",
+    phrase: "--json body --jq .body 2>/dev/null",
+  },
+  {
     source: "#21 CI lint and static checks run before the first push",
     file: "poteto-mode/playbooks/opening-a-pr.md",
     phrase: "run the repo's CI lint and static-check commands locally at their pinned versions",
