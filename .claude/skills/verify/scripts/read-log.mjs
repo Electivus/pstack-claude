@@ -7,7 +7,7 @@
 //   node read-log.mjs policy [--user-data-dir <dir>]
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { homedir, platform } from "node:os";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { execFileSync } from "node:child_process";
 import { parseArgs } from "node:util";
 
@@ -53,8 +53,13 @@ function markers(text) {
   return Object.fromEntries(values.find.map((w) => [w, text.includes(w)]));
 }
 
-// Delivery evidence comes from records the host wrote about what it attached, never from what the model said or what the user typed.
-const hostMarkers = (records, isConversation) => markers(records.filter((r) => !isConversation(r)).map((r) => JSON.stringify(r)).join("\n"));
+// Delivery evidence is only what the host logged as sent to the model. A hook's output proves the hook ran, not that its text was sent.
+// null means the host logged no record of what it sent, so a marker's absence proves nothing.
+const deliveredMarkers = (records) => {
+  const sent = records.filter(Boolean);
+  return sent.length ? markers(sent.map((r) => JSON.stringify(r)).join("\n")) : null;
+};
+const hookMarkers = (outputs) => markers(outputs.map((o) => JSON.stringify(o ?? "")).join("\n"));
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -75,17 +80,25 @@ function requireSinceAndMatch() {
   return Number(values.since);
 }
 
+function claudeTranscript(sessionId) {
+  const projects = join(process.env.CLAUDE_CONFIG_DIR ?? join(homedir(), ".claude"), "projects");
+  if (!sessionId || !existsSync(projects)) return null;
+  return readdirSync(projects).map((d) => join(projects, d, `${sessionId}.jsonl`)).find(existsSync) ?? null;
+}
+
 function readClaude(path) {
   const events = jsonl(path);
   const init = events.find((e) => e.type === "system" && e.subtype === "init");
   const result = events.find((e) => e.type === "result");
+  const hookResponses = events.filter((e) => e.subtype === "hook_response");
+  const transcript = claudeTranscript(init?.session_id);
+  const requests = transcript ? jsonl(transcript).filter((r) => r.type === "api-request-blob" && r.message?.role !== "assistant") : [];
   return {
     model: init?.model,
     plugins: init?.plugins?.map((p) => `${p.name} ${p.source} ${p.path}`),
     pstackSkills: init?.skills?.filter((s) => s.startsWith("pstack:")).length,
-    hooks: events
-      .filter((e) => e.subtype === "hook_response")
-      .map((e) => ({ hook: e.hook_name, exit: e.exit_code, outcome: e.outcome, output: clip(e.output ?? e.stdout) })),
+    transcript,
+    hooks: hookResponses.map((e) => ({ hook: e.hook_name, exit: e.exit_code, outcome: e.outcome, output: clip(e.output ?? e.stdout) })),
     toolCalls: events
       .filter((e) => e.type === "assistant")
       .flatMap((e) => e.message?.content ?? [])
@@ -93,7 +106,8 @@ function readClaude(path) {
       .map((c) => `${c.name} ${clip(c.input, 120)}`),
     result: result?.result,
     isError: result?.is_error,
-    markersInStream: hostMarkers(events, (e) => ["assistant", "user", "result"].includes(e.type)),
+    markersDelivered: deliveredMarkers(requests.map((r) => r.message.content)),
+    markersInHookOutput: hookMarkers(hookResponses.map((e) => e.output ?? e.stdout)),
     markersInReply: markers(result?.result ?? ""),
   };
 }
@@ -138,7 +152,11 @@ function readCopilot(since) {
       subagents: events.filter((e) => e.type === "subagent.started").map((e) => e.data.agentName),
       errors: events.filter((e) => /error/i.test(e.type)).map((e) => `${e.type} ${clip(e.data, 400)}`),
       replies: events.filter((e) => e.type === "assistant.message" && e.data.content).map((e) => e.data.content),
-      markersInLog: hostMarkers(events, (e) => ["assistant.message", "user.message"].includes(e.type)),
+      markersDelivered: deliveredMarkers([
+        ...events.filter((e) => e.type === "system.message" || e.type === "instruction.update").map((e) => e.data.content),
+        ...events.filter((e) => e.type === "user.message").map((e) => e.data.transformedContent),
+      ]),
+      markersInHookOutput: hookMarkers(ends.map((e) => e.data.output)),
     };
   }
 }
@@ -160,12 +178,18 @@ function readLocal(since) {
     const spans = jsonl(path);
     const prompt = spans.find((s) => s.type === "user_message")?.attrs?.content ?? "";
     if (!prompt.includes(values.match)) continue;
+    const requests = spans.filter((s) => s.type === "llm_request");
+    const systemPrompts = readdirSync(dirname(path))
+      .filter((f) => /^system_prompt_\d+\.json$/.test(f))
+      .map((f) => JSON.parse(readFileSync(join(dirname(path), f), "utf8")).content);
+    const inputMessages = requests.flatMap((s) => JSON.parse(s.attrs?.inputMessages ?? "[]")).filter((m) => m.role !== "assistant");
+    const hookSpans = spans.filter((s) => (/hook/i.test(s.type) || /hook/i.test(s.name ?? "")) && s.name !== "Hook Discovery");
     const detail = (name) => [...new Set(spans.filter((s) => s.name === name).map((s) => s.attrs?.details))];
     return {
       done: spans.some((s) => s.type === "turn_end"),
       log: path,
       version: spans.find((s) => s.type === "session_start")?.attrs,
-      models: [...new Set(spans.filter((s) => s.type === "llm_request").map((s) => s.name))],
+      models: [...new Set(requests.map((s) => s.name))],
       hookDiscovery: detail("Hook Discovery"),
       instructionsDiscovery: detail("Instructions Discovery"),
       customizations: detail("Resolve Customizations")
@@ -178,10 +202,11 @@ function readLocal(since) {
         .flatMap((m) => m.parts ?? [])
         .filter((p) => p.type === "text")
         .map((p) => p.content),
-      hooks: spans.filter((s) => /hook/i.test(s.type) || /hook/i.test(s.name ?? "")).filter((s) => s.name !== "Hook Discovery").map((s) => `${s.name} ${s.status} ${clip(s.attrs, 300)}`),
+      hooks: hookSpans.map((s) => `${s.name} ${s.status} ${clip(s.attrs, 300)}`),
       tools: spans.filter((s) => s.type === "tool_call").map((s) => `${s.name} ${s.status}`),
       errors: spans.filter((s) => s.status && s.status !== "ok").map((s) => `${s.type} ${s.name} ${clip(s.attrs, 400)}`),
-      markersInLog: hostMarkers(spans, (s) => ["agent_response", "user_message"].includes(s.type)),
+      markersDelivered: deliveredMarkers([...systemPrompts, ...inputMessages]),
+      markersInHookOutput: hookMarkers(hookSpans.map((s) => s.attrs?.output)),
     };
   }
 }
