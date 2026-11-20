@@ -80,6 +80,10 @@ function setup(instance) {
     console.error(`${p.userDataDir} is in use. Run quit first.`);
     process.exit(1);
   }
+  if (existsSync(instance) && readdirSync(instance).length && !existsSync(join(instance, MARKER))) {
+    console.error(`${instance} holds files that setup did not create. Pick a new instance path.`);
+    process.exit(2);
+  }
   for (const d of [join(p.user, "globalStorage"), p.extensionsDir, p.workspace, p.copilotHome]) mkdirSync(d, { recursive: true });
   writeFileSync(join(instance, MARKER), "created by vscode-instance.mjs setup; clean refuses a directory without this file\n");
 

@@ -24,7 +24,7 @@ Scripts live in `scripts/` beside this file. Run them with `node`. Each prints J
 ## Doctor
 
 - `node $V/read-log.mjs policy` reads the user's cached account policy read-only. `chat_preview_features_enabled: false` means VS Code forces chat hooks off, so Local sessions run no hook. Pass `--user-data-dir <instance>/user-data` to read an instance's copy. A new instance has no cached policy, so it fetches one at launch. A running VS Code loads its cached policy at start and refetches only when the cache is older than an hour. Its hourly refetch skips while the window is unfocused and runs when the window regains focus. Run `Developer: Sync Account Policy` (`workbench.action.syncAccountPolicy`) from the Command Palette to pick up a policy change at once.
-- `pgrep -fl -- "--user-data-dir <instance>"` shows the instance's main process. `vscode-instance.mjs` refuses to set up over a running instance.
+- `pgrep -fl -- "--user-data-dir <instance>"` shows the instance's main process. `vscode-instance.mjs` refuses to set up over a running instance, or in a non-empty directory that lacks its `.pstack-verify-instance` marker.
 - In `setup` output, `githubAuthCopied: false` means the user's VS Code is not signed in to GitHub, and the instance will not reach Copilot.
 
 ## Drive
