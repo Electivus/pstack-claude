@@ -53,6 +53,9 @@ function markers(text) {
   return Object.fromEntries(values.find.map((w) => [w, text.includes(w)]));
 }
 
+// Delivery evidence comes from records the host wrote about what it attached, never from what the model said or what the user typed.
+const hostMarkers = (records, isConversation) => markers(records.filter((r) => !isConversation(r)).map((r) => JSON.stringify(r)).join("\n"));
+
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function waitFor(pick) {
@@ -76,7 +79,6 @@ function readClaude(path) {
   const events = jsonl(path);
   const init = events.find((e) => e.type === "system" && e.subtype === "init");
   const result = events.find((e) => e.type === "result");
-  const raw = readFileSync(path, "utf8");
   return {
     model: init?.model,
     plugins: init?.plugins?.map((p) => `${p.name} ${p.source} ${p.path}`),
@@ -91,7 +93,7 @@ function readClaude(path) {
       .map((c) => `${c.name} ${clip(c.input, 120)}`),
     result: result?.result,
     isError: result?.is_error,
-    markersInStream: markers(raw),
+    markersInStream: hostMarkers(events, (e) => ["assistant", "user", "result"].includes(e.type)),
     markersInReply: markers(result?.result ?? ""),
   };
 }
@@ -116,7 +118,6 @@ function readCopilot(since) {
     if (!prompt.includes(values.match)) continue;
     const start = events.find((e) => e.type === "session.start")?.data;
     const ends = events.filter((e) => e.type === "hook.end");
-    const raw = readFileSync(join(dir, "events.jsonl"), "utf8");
     return {
       done: ends.some((e) => e.data.hookType === "agentStop") || events.some((e) => e.type === "session.error"),
       events: join(dir, "events.jsonl"),
@@ -137,7 +138,7 @@ function readCopilot(since) {
       subagents: events.filter((e) => e.type === "subagent.started").map((e) => e.data.agentName),
       errors: events.filter((e) => /error/i.test(e.type)).map((e) => `${e.type} ${clip(e.data, 400)}`),
       replies: events.filter((e) => e.type === "assistant.message" && e.data.content).map((e) => e.data.content),
-      markersInLog: markers(raw),
+      markersInLog: hostMarkers(events, (e) => ["assistant.message", "user.message"].includes(e.type)),
     };
   }
 }
@@ -160,7 +161,6 @@ function readLocal(since) {
     const prompt = spans.find((s) => s.type === "user_message")?.attrs?.content ?? "";
     if (!prompt.includes(values.match)) continue;
     const detail = (name) => [...new Set(spans.filter((s) => s.name === name).map((s) => s.attrs?.details))];
-    const raw = readFileSync(path, "utf8");
     return {
       done: spans.some((s) => s.type === "turn_end"),
       log: path,
@@ -181,7 +181,7 @@ function readLocal(since) {
       hooks: spans.filter((s) => /hook/i.test(s.type) || /hook/i.test(s.name ?? "")).filter((s) => s.name !== "Hook Discovery").map((s) => `${s.name} ${s.status} ${clip(s.attrs, 300)}`),
       tools: spans.filter((s) => s.type === "tool_call").map((s) => `${s.name} ${s.status}`),
       errors: spans.filter((s) => s.status && s.status !== "ok").map((s) => `${s.type} ${s.name} ${clip(s.attrs, 400)}`),
-      markersInLog: markers(raw),
+      markersInLog: hostMarkers(spans, (s) => ["agent_response", "user_message"].includes(s.type)),
     };
   }
 }
