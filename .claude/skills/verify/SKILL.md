@@ -13,7 +13,7 @@ Scripts live in `scripts/` beside this file. Run them with `node`. Each prints J
 
 1. **Probe copy.** `node $V/probe-plugin.mjs <scratch>/<new dir> --mark hooks/session-start-context.md=<WORD1> --mark rules/pstack-routing.md=<WORD2>` copies `plugins/pstack` to `<dir>/plugin`. It routes every hook command through `hook-wrapper.mjs` into `<dir>/hooks.jsonl` and appends `Verification marker: <WORD>` to each marked file. Use a new directory and new words for every probe. A Copilot session keeps its own copy of the plugin per source path, so an edit after the first session never reaches it.
 2. **Claude Code.** No instance to start. `node $V/run-claude.mjs <dir> "<prompt>"` runs `claude -p --model haiku --setting-sources project,local --plugin-dir <dir>/plugin` with stream-json and hook events, from an empty `<dir>/ws`. Leaving out user settings drops the user's installed pstack, so only the probe loads. The stream lands in `<dir>/claude.jsonl`.
-3. **VS Code.** Each run gets its own instance, separate from the user's VS Code. `<instance>` is the output of `node $V/vscode-instance.mjs path <name>`, a short `pv-<name>` directory under `/tmp` (under the temp directory on Windows), or under `$PV_ROOT` when set:
+3. **VS Code.** Each run gets its own instance, separate from the user's VS Code. `<instance>` is the output of `node $V/vscode-instance.mjs path <name>`, a short `pv-<name>` directory under `/tmp`, or under `$PV_ROOT` when set. `vscode-instance.mjs` supports macOS and Linux only: it finds instances with `pgrep`, and on Windows it exits with a message:
    - `node $V/vscode-instance.mjs setup <instance> --session copilot|local --plugin <dir>/plugin [--model <id>]`
    - `node $V/vscode-instance.mjs launch <instance>`
 

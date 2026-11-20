@@ -7,7 +7,7 @@
 //   node vscode-instance.mjs quit <instance dir>
 //   node vscode-instance.mjs clean <instance dir> --evidence <dir>
 import { cpSync, existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from "node:fs";
-import { homedir, platform, tmpdir } from "node:os";
+import { homedir, platform } from "node:os";
 import { join, resolve } from "node:path";
 import { execFileSync, spawnSync } from "node:child_process";
 import { parseArgs } from "node:util";
@@ -23,12 +23,15 @@ const { values, positionals } = parseArgs({
   },
 });
 const [command, dir, prompt] = positionals;
+if (platform() === "win32") {
+  console.error("vscode-instance.mjs supports macOS and Linux only: it finds instances with pgrep, which Windows lacks.");
+  process.exit(2);
+}
 const cli = process.env.CODE_CLI ?? "code-insiders";
 
 function defaultUserDataDir() {
   const name = "Code - Insiders";
   if (platform() === "darwin") return join(homedir(), "Library/Application Support", name);
-  if (platform() === "win32") return join(process.env.APPDATA ?? "", name);
   return join(homedir(), ".config", name);
 }
 
@@ -36,7 +39,7 @@ const MARKER = ".pstack-verify-instance";
 
 // Short on purpose: VS Code puts its main socket under the instance and macOS caps socket paths near 104 bytes, which os.tmpdir() on macOS (/var/folders/...) overruns.
 function instancePath(name) {
-  const root = process.env.PV_ROOT ?? (platform() === "win32" ? tmpdir() : "/tmp");
+  const root = process.env.PV_ROOT ?? "/tmp";
   return join(root, `pv-${name}`);
 }
 
