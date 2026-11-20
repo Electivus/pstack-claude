@@ -33,4 +33,4 @@ Preconditions:
 - `--model` with `--session local` stores `copilot/<id>` under `chat.currentLanguageModel.panel`. That path has not been run, so check `models` in the reader's output.
 - Copilot Chat 0.76 logs no `Hook Discovery` span. With hooks off, the empty wrapper log is the only negative, and it is this run's own record, not the host's.
 - The hooks-on case needs the account's editor preview features on, which an instance cannot change. With them off, run the rest and record `local-hook-dropped` as not run.
-- On Copilot Chat 0.76 the `Resolve Customizations` summary counted one agent, but no `[custom-agent]` entry appeared in it or in `tools_0.json`. `local-agents` is unproven on that version.
+- Copilot Chat 0.76.2026111704 listed four `[custom-agent]` entries. On 0.76.2026111902 the `Resolve Customizations` summary counted one agent, but no `[custom-agent]` entry appeared in it or in `tools_0.json`, and the cause was not found. Check `local-agents` against the version in `version`.
