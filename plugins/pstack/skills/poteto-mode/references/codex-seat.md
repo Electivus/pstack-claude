@@ -20,7 +20,9 @@ A Codex seat is a family of its own, different from every Claude model.
 
 Some skills ask for a model from another family and name no role line. Examples are the second opinion in **poteto-mode** and the trail review in **show-me-your-work**. For those, use the first Codex seat in the `arena cross-judge pool` line. With none there, pick as before.
 
-Arena and the Eval playbook take the first entry of that line from another family than the parent. So put the Codex seat first in the line. One line in the sheet then routes the cross-judge, the eval judge, second opinions, and the trail review to Codex.
+The same seat runs every independent verifier or reviewer of a change another agent wrote, such as the Shipping verifier and a required review gate. It replaces the `Agent` subagent that the `swarm workers` line would otherwise pick. A role with its own line, such as `swarm workers`, `thermos reviewers`, or `no-comments reviewer`, keeps that line.
+
+Arena and the Eval playbook take the first entry of that line from another family than the parent. So put the Codex seat first in the line. One line in the sheet then routes the cross-judge, the eval judge, second opinions, independent verifiers, and the trail review to Codex.
 
 ## Dispatch
 
@@ -71,6 +73,17 @@ A non-zero exit is a dispatch failure. The script prints `codex seat failed: exi
 ## Review gates
 
 A Codex seat that did not write the change counts as an independent reviewer for a review gate.
+
+## Verifiers
+
+A verifier runs the change the way a user would. On a Codex seat that changes four things.
+
+- You create the verifier's worktree at the PR head, because the seat cannot write `.git`. Point `--cd` at it.
+- Run the seat with `--write`. Add `--network` when it calls `gh`, installs dependencies, or reads CI. Otherwise install dependencies and download CI logs into the worktree before dispatch.
+- Name the driver skill in the kickoff by its absolute path, since the seat does not load Claude Code skills.
+- The seat returns `PASS`, `PASS+NOTES`, or `FAIL` as text. You post it on the PR verbatim, labelled with the seat, and record the head SHA it ran.
+
+When the seat fails to dispatch, run the verifier as an `Agent` subagent that did not write the change, and say so in the reply.
 
 ## Requirements
 
