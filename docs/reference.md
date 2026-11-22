@@ -195,6 +195,8 @@ Invoke [setup-pstack](../plugins/pstack/skills/setup-pstack/SKILL.md) to choose 
 
 For design comparisons and reviews, choose distinct models available to your runtime. The default panel uses different Claude models.
 
+On Claude Code, a sheet value of `codex` or `codex/<model>`, with an optional `@<level>` after a space, runs that seat on the Codex CLI, so a role can get a model from outside the Claude family. It is opt-in, needs `codex` on PATH and signed in, and is verified on macOS only. See [Codex seats](../plugins/pstack/skills/poteto-mode/references/codex-seat.md).
+
 Install dependencies for the workflows you use:
 
 | Dependency | When you need it |

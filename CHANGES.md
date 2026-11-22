@@ -2,6 +2,10 @@
 
 This file is the release changelog, with one `## <version> - <title>` entry per release, newest first. The Cursor-to-Claude rewrite rules live in [`tools/substitutions.json`](tools/substitutions.json), and the [sync boundary](CONTRIBUTING.md#the-sync-boundary) in `CONTRIBUTING.md` defines how a change to upstream's skill content is declared.
 
+## 0.9.155 - Run roles on the Codex CLI with Codex seats
+
+On Claude Code, a sheet value of `codex` or `codex/<model>`, with an optional `@<level>` after a space, now runs that seat on the Codex CLI. Every Claude Code seat was a Claude model, so a role that asks for a model from another family only got another Claude name. A Codex seat is a family of its own. `scripts/codex-seat.mjs` runs `codex exec` with an explicit sandbox, read-only unless `--write` is given, and fails when Codex exits non-zero or leaves no answer file. `references/codex-seat.md` covers the syntax, dispatch, effort, sandbox, and failure handling. It sends a skill's "model from another family" step to the first Codex seat in the `arena cross-judge pool` line, so one sheet line routes the cross-judge, the eval judge, second opinions, and the trail review to Codex. `setup-pstack` offers the models `codex debug models` lists and validates `codex/<slug>` entries. The seat is opt-in, no default line changes, and it is verified on macOS only. `bun test tests/` and `bun tools/ci-local.mjs` pass.
+
 ## 0.9.154 - Merge upstream 0.9.146: shorter skills on v0.15.46, watch-pr suite evidence, PSTACK_SESSION_HOOK
 
 This release merges [michael-denyer/pstack-claude](https://github.com/michael-denyer/pstack-claude) up to its 0.9.146, 18 commits since this fork branched from upstream at `f1209c0`. Upstream and this fork both released 0.9.142 to 0.9.146, so those numbers name different releases in the two changelogs. This entry lists upstream's changes by pull request instead.

@@ -720,6 +720,7 @@ function overrideSheetBlock(models) {
     "A model may carry a reasoning effort, as in `opus @xhigh` (levels: " + models.efforts.join(", ") + "); " +
     "the role's subagent then runs at that level, each entry of a panel list on its own. " +
     "`default effort` sets the level for a value without one; `session` uses the runtime's platform mapping to start from the parent session's effort. On Codex this requires active-turn metadata or an explicit effort choice. " +
+    "On Claude Code, `codex` or `codex/<model>` runs the seat on the Codex CLI. " +
     "`session hook: off` stops the supported runtime's pstack routing hook from injecting the poteto-mode mandate; " +
     "any other value, or no line, leaves it on unless the environment sets `PSTACK_SESSION_HOOK=off`.\n\n" +
     rows +
