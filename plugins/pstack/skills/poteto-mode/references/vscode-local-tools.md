@@ -98,15 +98,15 @@ Affected skill entry points point here. Most skills need only the tables above. 
 | Skill | On VS Code Local agent |
 |-------|------------------------|
 | `setup-pstack` | The skill's [Other runtimes](../../setup-pstack/references/runtimes.md) table names the Local sheet and how VS Code lists it. Its VS Code Local agent section lists the models with an unknown-model `runSubagent` call. |
-| `architect` | The runner panel goes through the **arena** skill. Each runner is one `runSubagent` call in one response, with a model from the sheet's `architect runners` line. |
+| `architect` | A large or contested design goes through the **arena** skill: each runner is one `runSubagent` call in one response, with a model from the sheet's `arena runners` line. |
 | `arena` | Runners and the cross-judge pool come from the sheet's panel lines. A refusal for cost tier reruns that entry without `model` (see Model names). Pick the cross-judge from a different model family than the candidate it grades. |
-| `how` | The explorers and the explainer are `runSubagent` calls with the sheet's `how` role models. Critics use `agentName: "Explore"`. |
+| `how` | The one subagent is a `runSubagent` call. |
 | `interrogate` | Each adversary is a `runSubagent` call, all in one response, with a model from the sheet. Keep the panel's model families distinct. |
 | `no-comments` | The `pstack:comment-sicko` dispatch is a `runSubagent` call with `agentName: "comment-sicko"`. |
 | `thermos` | Both review dispatches are `runSubagent` calls in one response, with `agentName: "thermo-nuclear-review-subagent"` and `agentName: "thermo-nuclear-code-quality-review-subagent"`. Each prompt carries the same diff and file contents. |
 | `swarm` | Each worker is a `runSubagent` call, all in one response. Give each writing worker its own worktree first (see Subagent policy). |
-| `why` | The parallel investigators and the synthesizer are `runSubagent` calls, and the investigators go in one response. List MCP servers from your tool list or `tool_search`, not from Claude Code's MCP files. |
-| `reflect` | The transcript finder reads Claude Code's layout and finds no Local session, so pass the session digest that step 1 allows. |
+| `why` | List MCP servers from your tool list or `tool_search`, not from Claude Code's MCP files. |
+| `reflect` | The transcript finder reads Claude Code's layout and finds no Local session, so work from the conversation in your context and say that the transcript was not found. |
 | `recall` | Do not list or read `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/projects/`, which holds Claude Code history, not this session's. Work from live state and the shared record. |
 | `show-me-your-work` | Check the log against this session's own context, not a Claude Code transcript. |
 | `automate-me` | The skill-authoring guidance resolves through the Driver and bundled skills table above. This mapping names no readable Local transcript store, so draw on the current session and the user's own account of how they work. |
