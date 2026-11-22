@@ -28,7 +28,7 @@ Arena and the Eval playbook take the first entry of that line from another famil
 2. Run the script with the Bash tool and `run_in_background: true`, in the same message as the other seats.
 
 ```shell
-node <poteto-mode-dir>/scripts/codex-seat.mjs '<seat>' --cd <dir> --prompt <file> --out <file> [--write]
+node <poteto-mode-dir>/scripts/codex-seat.mjs '<seat>' --cd <dir> --prompt <file> --out <file> [--write [--network] [--add-dir <dir>]...]
 ```
 
 `<poteto-mode-dir>` is this skill's directory. `--out` is the file the seat's final message lands in.
@@ -49,13 +49,20 @@ Resolve the level as for an `Agent` seat, then append a space and `@<level>` to 
 
 A seat is read-only by default. Use that for a judge, a reviewer, or a second opinion.
 
-Pass `--write` for a seat that produces files, such as an arena runner or an interrogate adversary. Point `--cd` at that seat's own worktree or output directory. The script always passes `-s`, so a `sandbox_mode` in the operator's Codex config never applies to a seat. The operator's `[sandbox_workspace_write]` settings still apply under `--write`, and they can add writable roots or network access.
+Pass `--write` for a seat that produces files, such as an arena runner or an interrogate adversary. Point `--cd` at that seat's own worktree or output directory. The script always passes `-s`, so a `sandbox_mode` in the operator's Codex config never applies to a seat. The operator's `[sandbox_workspace_write]` settings still apply under `--write` and can add writable roots. Their `network_access` alone does not open the network when the operator's Codex has the `network_proxy` feature on, because the proxy then denies every domain off its allowlist.
 
 Three limits hold under `--write` with those settings at their defaults, observed with codex-cli 0.171.0.
 
 - The writable roots are the `--cd` directory, the system temp directory, and `$TMPDIR`.
 - `git commit` fails inside a linked git worktree, because the index lives in the main repository's `.git`. The parent commits the seat's files.
 - Commands the seat runs have no network.
+
+Two opt-in flags lift the first and last limits for one seat. Each needs `--write`, and the script exits 2 without it.
+
+- `--network` gives the seat's commands the network. It sets `network_access` and turns Codex's network proxy off for that run, so every domain is reachable. Use it for a seat that runs `gh`, installs dependencies, or reads CI.
+- `--add-dir <dir>`, repeatable, adds a writable root, such as a package manager's store. It does not let the seat commit in a linked worktree. Codex keeps `.git` read-only even when the main repository's `.git` is added, so the parent still commits.
+
+A networked seat runs with the operator's credentials. `gh` inside it is signed in as the operator, so it can call the GitHub API as them, comments and merges included, and nothing in the sandbox stops it. Keep the default split. The seat returns its verdict as text, and the parent posts it and lands the change.
 
 ## Failure
 
