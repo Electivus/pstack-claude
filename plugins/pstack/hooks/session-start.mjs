@@ -100,6 +100,8 @@ if (!runtime) {
 } else {
   // A sheet that is missing or cannot be decoded leaves injection on.
   const sheet = readSheet(runtime.sheet());
-  if (sessionHookOff(sheet)) process.stdout.write(runtime.off ?? "");
+  // PSTACK_SESSION_HOOK=off reaches sessions whose home starts empty, such as
+  // Claude Code cloud sessions, where no user sheet survives.
+  if (process.env.PSTACK_SESSION_HOOK === "off" || sessionHookOff(sheet)) process.stdout.write(runtime.off ?? "");
   else process.stdout.write(runtime.print(sheet));
 }

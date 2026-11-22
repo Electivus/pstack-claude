@@ -255,6 +255,10 @@ export function advisoryReader(
     reviewThreadPage: (context, after) =>
       inner.reviewThreadPage(context, after),
     commitRollups: (context) => inner.commitRollups(context),
+    // A queued suite with no runs names no check the base branch could
+    // require, and the watcher reads one only to wait on it, so it stays required.
+    unsettledSuites: (context, head, checksRead, expectedApps) =>
+      inner.unsettledSuites(context, head, checksRead, expectedApps),
     async checksFastPath(context) {
       const fast = await inner.checksFastPath(context);
       return fast.kind === "checks"

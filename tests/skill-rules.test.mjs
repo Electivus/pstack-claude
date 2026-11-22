@@ -173,16 +173,6 @@ const rules = [
     phrase: "Record `BLOCKED: independent review` in the todolist",
   },
   {
-    source: "#231 reflect digest carries no verdict",
-    file: "reflect/SKILL.md",
-    phrase: "It states no diagnosis, verdict, or cause.",
-  },
-  {
-    source: "#231 reflect adds nothing beside the transcript paths",
-    file: "reflect/SKILL.md",
-    phrase: "Add nothing beside the transcript paths",
-  },
-  {
     source: "backnotprop/pstack#14 an outside rule nobody can check is held, not deleted",
     file: "poteto-mode/references/agents/comment-sicko.md",
     phrase: "the comment stays put as a `HOLD`, the one case where doubt is not meat",
@@ -210,7 +200,7 @@ const rules = [
   {
     source: "#20 every merge request routes to Shipping",
     file: "poteto-mode/SKILL.md",
-    phrase: "Asked to merge, land, or ship PRs, stacked or independent, including PRs another session wrote",
+    phrase: "Merging, landing, or shipping PRs, stacked or independent, including PRs another session wrote",
   },
   {
     source: "#12 parallel delegates get their own scratch directory",
@@ -260,7 +250,7 @@ const rules = [
   {
     source: "#22 a deferred follow-up names its owner",
     file: "poteto-mode/playbooks/opening-a-pr.md",
-    phrase: "Name each follow-up's owner",
+    phrase: "name each follow-up's owner",
   },
   {
     source: "#22 merging alone ships nothing",
@@ -294,8 +284,8 @@ const rules = [
   },
   {
     source: "#24 explorers list run, debug, and log entry points",
-    file: "how/references/explorer-prompt.md",
-    phrase: "### Run, Debug, and Log Entry Points",
+    file: "how/SKILL.md",
+    phrase: "Name the subsystem's own ways to run and observe it",
   },
   {
     source: "#25 a probe settles an observable disagreement",
@@ -330,22 +320,22 @@ const rules = [
   {
     source: "#31 a file added to a shared directory runs blast-radius",
     file: "poteto-mode/SKILL.md",
-    phrase: "A change that adds a file to a directory several runtimes or consumers load → the **blast-radius** skill",
+    phrase: "A change that adds a file to a directory several runtimes or consumers load → **blast-radius**",
   },
   {
     source: "#31 Blast Radius comes from the consumers",
     file: "poteto-mode/playbooks/opening-a-pr.md",
-    phrase: "Write it from the list of consumers, not from what you tested.",
+    phrase: "from the list of consumers that the **blast-radius** skill builds, not from what you tested.",
   },
   {
     source: "#31 Blast Radius runs blast-radius",
     file: "poteto-mode/playbooks/opening-a-pr.md",
-    phrase: "Build that list with the **blast-radius** skill.",
+    phrase: "Write `## Blast Radius` from the list of consumers",
   },
   {
     source: "#21 Verification names each CI job not run locally",
     file: "poteto-mode/playbooks/opening-a-pr.md",
-    phrase: "plus one bullet that names each CI job you could not run locally",
+    phrase: "In `## Verification`, name each CI job you could not run locally.",
   },
   {
     source: "#31 blast-radius description names shared directories",

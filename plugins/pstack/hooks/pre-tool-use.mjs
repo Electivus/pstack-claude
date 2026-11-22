@@ -147,7 +147,6 @@ const SHAPES = {
   log: (args) => (args.length === 6 ? [args[0]] : null),
   transcript: (args) => ((args.length === 2 || args.length === 3) && args[1] !== "" ? [args[0], ...args.slice(2)] : null),
   "optional-path": (args) => (args.length <= 1 ? args : null),
-  "one-path": (args) => (args.length === 1 ? args : null),
   paths: (args) => args,
   resume,
 };
@@ -159,7 +158,6 @@ const CONTRACT = new Map([
   ["skills/reflect/scripts/find-transcript.mjs", "transcript"],
   ["skills/setup-pstack/scripts/check-sheet.mjs", "optional-path"],
   ["skills/poteto-mode/scripts/check-playbooks.mjs", "optional-path"],
-  ["skills/poteto-mode/scripts/check-plan.mjs", "one-path"],
   ["skills/poteto-mode/scripts/worktree-audit.mjs", "paths"],
   ["skills/poteto-mode/scripts/resume.mjs", "resume"],
 ]);

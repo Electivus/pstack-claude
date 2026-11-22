@@ -402,7 +402,7 @@ describe("PreToolUse vendored script runs", () => {
     "a transcript search of Copilot's session-state directory": `node ${find} ${copilotHome}/session-state prompt ${workspace}`,
     // A path operand in the plugin could rewrite the context every session loads.
     "a log appended to the plugin's session context": `node ${log} ${root}/hooks/session-start-copilot.md review decision why evidence result`,
-    "a path in the plugin": `node ${root}/skills/poteto-mode/scripts/check-plan.mjs ${root}/skills/reflect/SKILL.md`,
+    "a path in the plugin": `node ${root}/skills/poteto-mode/scripts/check-playbooks.mjs ${root}/skills/reflect/SKILL.md`,
     "a flag holding an outside path": `node ${root}/skills/poteto-mode/scripts/resume.mjs begin --project=/etc/x`,
     "a sibling prefix": `node ${root}-evil/skills/reflect/scripts/find-transcript.mjs`,
     "a script outside scripts/": `node ${root}/skills/reflect/SKILL.md`,
@@ -472,7 +472,7 @@ describe("PreToolUse vendored script runs", () => {
 
   // The shell that once resolved these paths read a leading dash as a cd option.
   test("stays silent for a relative workspace that starts with a dash", () => {
-    expect(run(bash(`node ${root}/skills/poteto-mode/scripts/check-plan.mjs plan.md`, "-P"), env)).toEqual(quiet);
+    expect(run(bash(`node ${root}/skills/poteto-mode/scripts/check-playbooks.mjs plan.md`, "-P"), env)).toEqual(quiet);
   });
 
   test("stays silent when the workspace sits inside the plugin", () => {
