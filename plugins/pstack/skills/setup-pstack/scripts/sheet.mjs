@@ -5,8 +5,8 @@
 import { readFileSync, statSync } from "node:fs";
 
 // Stamped from plugins/pstack/models.json; edit there and rerun tools/generate.mjs.
-export const ROLES = ["feature, refactoring", "bug-fix", "perf-issue", "hillclimb", "judgment and prose", "strongest judgment", "how explorer", "how explainer", "why investigators", "why synthesizer", "reflect tooling", "reflect judgment, divergent, synthesizer", "arena runners", "arena cross-judge pool", "swarm workers", "architect runners", "interrogate reviewers", "thermos reviewers", "no-comments reviewer"];
-const PANELS = new Set(["arena runners", "arena cross-judge pool", "architect runners", "interrogate reviewers"]);
+export const ROLES = ["feature, refactoring", "bug-fix", "perf-issue", "hillclimb", "judgment and prose", "strongest judgment", "arena runners", "arena cross-judge pool", "swarm workers", "interrogate reviewers", "thermos reviewers", "no-comments reviewer"];
+const PANELS = new Set(["arena runners", "arena cross-judge pool", "interrogate reviewers"]);
 const EFFORTS = new Set(["low", "medium", "high", "xhigh", "max"]);
 // End of the stamped lists.
 

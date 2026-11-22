@@ -1,9 +1,9 @@
 import { isAdvisoryWait, pendingWait } from "./advisory.ts";
+import { resolveHeadChecks } from "./head-checks.ts";
 import { landingRevision } from "./landing.ts";
 import {
   ChecksUnavailable,
   WatcherQueryError,
-  resolveChecks,
   resolveReviewThreads,
 } from "./github.ts";
 import { DeadlineExceeded, type WatchDeadline } from "./deadline.ts";
@@ -89,6 +89,7 @@ const neverConfirms: NoChecksConfirmer = () => false;
 async function noChecksCi(
   reader: T.GitHubReader,
   facts: OpenFacts,
+  queuedWithoutRuns: readonly T.SuiteApp[],
   confirmNoChecks = neverConfirms
 ): Promise<T.CiNone | T.CiUnreported> {
   const merge = await mergeAssessment(reader, facts);
@@ -102,7 +103,7 @@ async function noChecksCi(
     hadPreviousPassingCi: false,
   } as const;
   return confirmNoChecks(facts)
-    ? { ...none, kind: "ci-none", github: merge.github }
+    ? { ...none, kind: "ci-none", github: merge.github, queuedWithoutRuns }
     : { ...none, kind: "ci-unreported" };
 }
 const AUTOMATION_TOKENS = [
@@ -150,6 +151,7 @@ export async function readSnapshot(args: {
   readonly pendingHistory: "include" | "omit";
   readonly allowDraft: boolean;
   readonly confirmNoChecks?: NoChecksConfirmer;
+  readonly expectedApps?: readonly string[];
 }): Promise<T.PrSnapshot> {
   const facts = await args.reader.pullRequest(args.context);
   if (facts.state === "MERGED" || facts.mergedAt !== null)
@@ -158,7 +160,7 @@ export async function readSnapshot(args: {
     return { kind: "closed", context: args.context, facts };
   const [threads, checks] = await Promise.all([
     resolveReviewThreads(args.reader, args.context),
-    resolveChecks(args.reader, args.context),
+    resolveHeadChecks(args.reader, facts, args.expectedApps),
   ]);
   const failed = nonEmpty(
     checks.checks.filter(
@@ -172,7 +174,12 @@ export async function readSnapshot(args: {
   );
   let ci: T.CiState;
   if (checks.kind === "no-checks")
-    ci = await noChecksCi(args.reader, facts, args.confirmNoChecks);
+    ci = await noChecksCi(
+      args.reader,
+      facts,
+      checks.queuedWithoutRuns,
+      args.confirmNoChecks
+    );
   else if (
     failed === null &&
     pending !== null &&
@@ -218,6 +225,7 @@ export async function readSnapshot(args: {
         failed: [],
         pending: [],
         github: merge.github,
+        queuedWithoutRuns: checks.queuedWithoutRuns,
       };
   }
   const factsAfterChecks = await args.reader.pullRequest(args.context);
@@ -589,6 +597,7 @@ export async function runSimple(args: {
           pendingHistory: "include",
           allowDraft: args.options.allowDraft,
           confirmNoChecks,
+          expectedApps: args.options.expectedApps,
         })
       );
     const complete = nonEmpty(rows);
@@ -880,6 +889,7 @@ export async function runQueued(args: {
       pendingHistory: "omit",
       allowDraft: args.options.allowDraft,
       confirmNoChecks,
+      expectedApps: args.options.expectedApps,
     });
     const applied = applyQueueSnapshot(
       state,

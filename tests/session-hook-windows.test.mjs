@@ -10,7 +10,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { MUSE_HOOKS } from "../tools/runtimes.mjs";
-import { roleCases, sheetCases, writeSheet } from "./session-hook-sheets.mjs";
+import { roleCases, sessionHookValues, sheetCases, writeSheet } from "./session-hook-sheets.mjs";
 
 const pluginRoot = fileURLToPath(new URL("../plugins/pstack/", import.meta.url));
 const read = (rel) => readFileSync(join(pluginRoot, rel), "utf8");
@@ -99,6 +99,18 @@ describe.skipIf(!onWindows)("Windows SessionStart hook without PowerShell", () =
     const codexHome = ({ fixture }) => ({ CODEX_HOME: join(fixture, "codex home") });
     expect(run({ via: "cmd", command: codex.command, sheet: "session hook: off\r\n", sheetAt, env: codexHome }).out).toBe("");
     expect(run({ via: "cmd", command: codex.command, sheet: "session hook: off\n", sheetAt: inProfile(".codex", "pstack-models.md"), env: { CODEX_HOME: "" } }).out).toBe("");
+  });
+
+  // A cloud session starts with an empty home, so no user sheet survives it.
+  for (const [label, value, off] of sessionHookValues) {
+    test(`Codex ${off ? "injects nothing" : "injects the mandate"} when PSTACK_SESSION_HOOK is ${label} and no sheet exists`, () => {
+      expect(run({ via: "cmd", command: codex.command, env: { PSTACK_SESSION_HOOK: value } })).toEqual({ status: 0, out: off ? "" : mandate, err: "" });
+    });
+  }
+
+  test("PSTACK_SESSION_HOOK=off wins over a sheet with session hook: on", () => {
+    const sheetAt = inProfile(".codex", "pstack-models.md");
+    expect(run({ via: "cmd", command: codex.command, sheet: "session hook: on\n", sheetAt, env: { PSTACK_SESSION_HOOK: "off" } }).out).toBe("");
   });
 
   test("writes UTF-8 context byte for byte", () => {

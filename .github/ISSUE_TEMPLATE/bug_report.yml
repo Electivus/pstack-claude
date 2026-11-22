@@ -34,6 +34,17 @@ body:
         - Codex
         - Pi
         - GitHub Copilot
+        - VS Code Local agent
+        - Muse
+        - MiniMax Code
+        - Antigravity
+        - OMP
+        - Kimi Code CLI
+        - Grok Build
+        - DeepSeek Harness
+        - OpenCode 2
+        - Another harness
+        - More than one, or not specific to a runtime
     validations:
       required: true
   - type: input

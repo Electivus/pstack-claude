@@ -42,13 +42,13 @@ poteto-mode's Subagents section sets Claude-specific defaults (`subagent_type: "
 
 Skills name Claude Code model aliases in their Models sections. Those aliases are not VS Code model names, and the VS Code Local build ships no default models. `runSubagent` takes a `model` written as `Model Name (vendor)`, as the chat model picker shows it, and the models an account can reach depend on its plan and policy. The user picks them once.
 
-- The model sheet is `~/.copilot/instructions/pstack-models-vscode-local.instructions.md`. VS Code lists it among the session's instructions as `pstack-models-vscode-local`, with its absolute path, and does not attach its text. Before a skill that needs a role model (`architect`, `arena`, `how`, `interrogate`, `no-comments`, `poteto-mode`, `reflect`, `swarm`, `thermos`, `why`), read it with `read_file` at that path. With no such entry, omit `model` for every role, say once that the roles run on the session's model and that `setup-pstack` chooses others, and continue.
+- The model sheet is `~/.copilot/instructions/pstack-models-vscode-local.instructions.md`. VS Code lists it among the session's instructions as `pstack-models-vscode-local`, with its absolute path, and does not attach its text. Before a skill that needs a role model (`arena`, `interrogate`, `no-comments`, `poteto-mode`, `swarm`, `thermos`), read it with `read_file` at that path. With no such entry, omit `model` for every role, say once that the roles run on the session's model and that `setup-pstack` chooses others, and continue.
 - A role line in the sheet is the user's explicit model instruction, so pass its value as `runSubagent`'s `model`, exactly as written. `inherit-parent` or `auto` omits `model`. `runSubagent` has no effort parameter, so ignore a `default effort` line and any `@<level>` suffix.
 - `runSubagent` refuses a model whose cost multiplier is above the session model's, and a name it does not know. On either error, rerun that call without `model`, say which role ran on the session's model, and never substitute a model the sheet does not name.
 - VS Code includes `CLAUDE.md` files and does not expand their `@` lines. A `pstack-models.md` that such a line names is Claude Code's sheet. Do not read it for role models or pass its values to `runSubagent`.
 - Roles that default to the worker model (`feature, refactoring`): the worker model the user chose.
 - Roles that default to the strongest model (`strongest judgment`): the strongest model the user chose.
-- Diverse-model panels (`arena`, `architect`, `interrogate`): the adversarial signal comes from model diversity, so fill a panel from distinct model families (Claude, GPT, Gemini, Grok, and so on). The vendor in parentheses is `copilot` for nearly every model, so it does not tell families apart. If only one family is reachable, note in the verdict that diversity was reduced.
+- Diverse-model panels (`arena`, `interrogate`): the adversarial signal comes from model diversity, so fill a panel from distinct model families (Claude, GPT, Gemini, Grok, and so on). The vendor in parentheses is `copilot` for nearly every model, so it does not tell families apart. If only one family is reachable, note in the verdict that diversity was reduced.
 
 `/setup-pstack` writes the configured model list. On VS Code's Local agent, list the models from the error of a `runSubagent` call with an unknown `model`, and write only names it shows. The Copilot sheet checker rejects these names and does not apply.
 
@@ -70,7 +70,7 @@ Run a script from the plugin through `run_in_terminal`, with its interpreter and
 
 Claude Code keeps one directory per project under `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/projects/<encoded-cwd>/`. The Local agent keeps one file per session at `<workspaceStorage>/<id>/GitHub.copilot-chat/transcripts/<session-id>.jsonl`. pstack's transcript finder does not read that layout, and this mapping names no other Local transcript store. Do not read Claude Code's projects directory or Copilot's `session-state` directory as this session's history. Say that session history is unavailable instead of reporting that something was never recorded.
 
-`orchestrate` and `multi-phase-plan` keep their store under `~/.claude/orchestrate/` on Claude Code. On the VS Code Local agent, keep it under `~/.copilot/orchestrate/`, the default location of the GitHub Copilot build's store.
+`autopilot-full` keeps its store under `~/.claude/orchestrate/` on Claude Code. On the VS Code Local agent, keep it under `~/.copilot/orchestrate/`, the default location of the GitHub Copilot build's store.
 
 ## Driver and bundled skills pstack references
 
@@ -98,15 +98,15 @@ Affected skill entry points point here. Most skills need only the tables above. 
 | Skill | On VS Code Local agent |
 |-------|------------------------|
 | `setup-pstack` | The skill's [Other runtimes](../../setup-pstack/references/runtimes.md) table names the Local sheet and how VS Code lists it. Its VS Code Local agent section lists the models with an unknown-model `runSubagent` call. |
-| `architect` | The runner panel goes through the **arena** skill. Each runner is one `runSubagent` call in one response, with a model from the sheet's `architect runners` line. |
+| `architect` | A large or contested design goes through the **arena** skill: each runner is one `runSubagent` call in one response, with a model from the sheet's `arena runners` line. |
 | `arena` | Runners and the cross-judge pool come from the sheet's panel lines. A refusal for cost tier reruns that entry without `model` (see Model names). Pick the cross-judge from a different model family than the candidate it grades. |
-| `how` | The explorers and the explainer are `runSubagent` calls with the sheet's `how` role models. Critics use `agentName: "Explore"`. |
+| `how` | The one subagent is a `runSubagent` call. |
 | `interrogate` | Each adversary is a `runSubagent` call, all in one response, with a model from the sheet. Keep the panel's model families distinct. |
 | `no-comments` | The `pstack:comment-sicko` dispatch is a `runSubagent` call with `agentName: "comment-sicko"`. |
 | `thermos` | Both review dispatches are `runSubagent` calls in one response, with `agentName: "thermo-nuclear-review-subagent"` and `agentName: "thermo-nuclear-code-quality-review-subagent"`. Each prompt carries the same diff and file contents. |
 | `swarm` | Each worker is a `runSubagent` call, all in one response. Give each writing worker its own worktree first (see Subagent policy). |
-| `why` | The parallel investigators and the synthesizer are `runSubagent` calls, and the investigators go in one response. List MCP servers from your tool list or `tool_search`, not from Claude Code's MCP files. |
-| `reflect` | The transcript finder reads Claude Code's layout and finds no Local session, so pass the session digest that step 1 allows. |
+| `why` | List MCP servers from your tool list or `tool_search`, not from Claude Code's MCP files. |
+| `reflect` | The transcript finder reads Claude Code's layout and finds no Local session, so work from the conversation in your context and say that the transcript was not found. |
 | `recall` | Do not list or read `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/projects/`, which holds Claude Code history, not this session's. Work from live state and the shared record. |
 | `show-me-your-work` | Check the log against this session's own context, not a Claude Code transcript. |
 | `automate-me` | The skill-authoring guidance resolves through the Driver and bundled skills table above. This mapping names no readable Local transcript store, so draw on the current session and the user's own account of how they work. |
