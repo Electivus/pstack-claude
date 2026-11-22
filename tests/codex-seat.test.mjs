@@ -93,6 +93,35 @@ posix("--write gives workspace-write", () => {
   expect(after(result.seen.argv, "-s")).toBe("workspace-write");
 });
 
+posix("a seat without --network or --add-dir asks for neither", () => {
+  const result = fixture().run("codex", { flags: ["--write"] });
+  expect(result.status).toBe(0);
+  expect(result.seen.argv).not.toContain("--add-dir");
+  expect(result.seen.argv).not.toContain("--disable");
+  expect(result.seen.argv.join(" ")).not.toContain("network_access");
+});
+
+posix("--network turns on network access and turns off Codex's network proxy", () => {
+  const result = fixture().run("codex", { flags: ["--write", "--network"] });
+  expect(result.status).toBe(0);
+  expect(after(result.seen.argv, "-s")).toBe("workspace-write");
+  expect(result.seen.argv).toContain("sandbox_workspace_write.network_access=true");
+  expect(after(result.seen.argv, "--disable")).toBe("network_proxy");
+});
+
+posix("each --add-dir reaches codex as a writable root", () => {
+  const result = fixture().run("codex", { flags: ["--write", "--add-dir", "/a", "--add-dir", "/b"] });
+  expect(result.status).toBe(0);
+  const dirs = result.seen.argv.flatMap((arg, i, argv) => (arg === "--add-dir" ? [argv[i + 1]] : []));
+  expect(dirs).toEqual(["/a", "/b"]);
+});
+
+posix.each([[["--network"]], [["--add-dir", "/a"]]])("%p without --write exits 2 and never runs codex", (flags) => {
+  const result = fixture().run("codex", { flags });
+  expect(result.status).toBe(2);
+  expect(result.called).toBe(false);
+});
+
 posix("codex/<model> @high passes the model and the effort", () => {
   const result = fixture().run("codex/some-model.5 @high");
   expect(result.status).toBe(0);

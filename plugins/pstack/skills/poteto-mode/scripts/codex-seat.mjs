@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Run one pstack seat on the Codex CLI. Port-only, Claude Code only.
-// Usage: node codex-seat.mjs '<seat>' --cd <dir> --prompt <file> --out <file> [--write]
+// Usage: node codex-seat.mjs '<seat>' --cd <dir> --prompt <file> --out <file> [--write [--network] [--add-dir <dir>]...]
 import { spawnSync } from "node:child_process";
 import { closeSync, existsSync, openSync, rmSync, statSync } from "node:fs";
 import { resolve } from "node:path";
@@ -29,6 +29,8 @@ function main() {
         prompt: { type: "string" },
         out: { type: "string" },
         write: { type: "boolean" },
+        network: { type: "boolean" },
+        "add-dir": { type: "string", multiple: true },
       },
     });
   } catch (error) {
@@ -42,7 +44,14 @@ function main() {
   if (!existsSync(values.prompt)) usage(`prompt file not found: ${values.prompt}`);
   if (resolve(values.out) === resolve(values.prompt)) usage("--out and --prompt name the same file");
 
+  const extraDirs = values["add-dir"] ?? [];
+  if (!values.write && (values.network || extraDirs.length)) usage("--network and --add-dir need --write");
+
   const args = ["exec", "-s", values.write ? "workspace-write" : "read-only"];
+  // Codex's network proxy denies every domain off its allowlist even with
+  // network_access on, so a networked seat turns the proxy off for this run.
+  if (values.network) args.push("-c", "sandbox_workspace_write.network_access=true", "--disable", "network_proxy");
+  for (const dir of extraDirs) args.push("--add-dir", dir);
   if (seat.model) args.push("-m", seat.model);
   if (seat.effort) args.push("-c", `model_reasoning_effort="${seat.effort}"`);
   args.push("--skip-git-repo-check", "--color", "never", "-C", values.cd, "-o", values.out, "-");
