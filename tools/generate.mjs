@@ -63,6 +63,7 @@ const repoRelative = (root, file) => relative(root, file).split(sep).join("/");
 export const VERSIONED_MANIFESTS = [
   ".claude-plugin/marketplace.json",
   `${PLUGIN}/.claude-plugin/plugin.json`,
+  "installer/package.json",
   ...RUNTIMES.filter((runtime) => runtime.manifest).map((runtime) => runtime.manifest),
 ];
 
@@ -722,7 +723,9 @@ function overrideSheetBlock(models) {
     "`default effort` sets the level for a value without one; `session` uses the runtime's platform mapping to start from the parent session's effort. On Codex this requires active-turn metadata or an explicit effort choice. " +
     "On Claude Code, `codex` or `codex/<model>` runs the seat on the Codex CLI. " +
     "`session hook: off` stops the supported runtime's pstack routing hook from injecting the poteto-mode mandate; " +
-    "any other value, or no line, leaves it on unless the environment sets `PSTACK_SESSION_HOOK=off`.\n\n" +
+    "any other value, or no line, leaves it on. " +
+    "Setting `PSTACK_SESSION_HOOK=off` in the environment also keeps the hook off on Claude Code, and on Codex, GitHub Copilot, Muse, and Antigravity when the runtime passes the variable to its hooks; " +
+    "MiniMax Code passes its hooks a fixed set of variables, and the OMP, OpenCode, and Pi plugins read only the sheet.\n\n" +
     rows +
     `\n\ndefault effort: ${models.defaultEffort}\nsession hook: on`
   );

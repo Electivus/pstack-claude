@@ -16,6 +16,31 @@ This port translates upstream's Cursor skills for Claude Code before installatio
 
 ## Install
 
+### Any harness: open-pstack
+
+Clone the fork and run the installer with Node 20 or later:
+
+```shell
+git clone https://github.com/Electivus/pstack-claude
+cd pstack-claude
+node installer/bin/open-pstack.mjs
+```
+
+The npm and Homebrew packages install upstream, not this fork. The checkout's installer finds the agent harnesses on your `PATH` and shows a picker. Choose the harnesses and confirm the planned steps. It runs the same recipe as each harness's section below.
+
+| Option | Effect |
+| --- | --- |
+| `--only claude,pi` | Install into the named harnesses without the picker. Run `--list` for all IDs. |
+| `--yes` | Install into every detected harness without asking. |
+| `--dry-run` | Print every step without running or writing anything. |
+| `--list` | Show each harness id and whether it was detected. |
+
+The shared `~/.agents/skills` directory (id `skills`) is never chosen by default, because Codex and OpenCode read it as well as their own plugin and would load each skill twice. Choose it for Gemini CLI, Prime Agent, or DeepSeek Harness.
+
+Muse, Grok Build, MiniMax Code, Antigravity, and the shared skills directory install from the plugin that `open-pstack` stages at `~/.local/share/open-pstack/pstack`, or under `XDG_DATA_HOME` when set. Pull updates in the clone and rerun the installer to refresh the staged copy. See [Install with open-pstack](docs/reference.md#install-with-open-pstack) for updates and uninstalling.
+
+### One harness at a time
+
 <details>
 <summary><strong>Claude Code</strong></summary>
 
@@ -130,6 +155,8 @@ After a release containing `kimi.plugin.json` is published, close other Kimi ses
 
 To test an unreleased checkout, use `/plugins install /absolute/path/to/pstack-claude` instead, followed by `/reload`; Kimi copies the whole checkout, including Git metadata and local files, so use a clean, reviewed copy. To update, close other Kimi sessions, reinstall from the same source in a fresh session, and run `/reload`. Invoke a skill as `/skill:pstack:poteto-mode`; see the [Kimi mapping](plugins/pstack/skills/poteto-mode/references/kimi-tools.md) for tool guidance.
 
+`node installer/bin/open-pstack.mjs --only kimi` prints these steps. Kimi installs plugins only from inside a session.
+
 </details>
 
 <details>
@@ -179,7 +206,7 @@ A commit-pinned reference does not advance. If a check immediately after install
 
 If you previously installed pstack skills into `~/.agents/skills`, inspect the links and remove only those pointing to your pstack checkout before using the plugin.
 
-The plugin registers `pstack-` skill IDs and adds routing in root sessions. If routing is missing, run `opencode api get /api/skill` and check that each `pstack-` path belongs to this plugin. Resolve any conflicting skill before manually invoking that ID. Use `session hook: off` in the OpenCode model sheet to disable routing. To remove the plugin, remove its configured path and restart the service, or use `opencode plugin remove` with the exact Git specifier. OpenCode 1 is unsupported. See the [OpenCode mapping](plugins/pstack/skills/poteto-mode/references/opencode-tools.md).
+The plugin registers `pstack-` skill IDs, registers the bundled agents as subagents under their Claude Code names, such as `pstack:poteto-agent`, and adds routing in root sessions. If routing is missing, run `opencode api get /api/skill` and check that each `pstack-` path belongs to this plugin. Resolve any conflicting skill before manually invoking that ID. Use `session hook: off` in the OpenCode model sheet to disable routing. To remove the plugin, remove its configured path and restart the service, or use `opencode plugin remove` with the exact Git specifier. OpenCode 1 is unsupported. See the [OpenCode mapping](plugins/pstack/skills/poteto-mode/references/opencode-tools.md).
 
 </details>
 

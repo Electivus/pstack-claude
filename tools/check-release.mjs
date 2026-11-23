@@ -33,6 +33,7 @@ export const SHIPPED = [
   "package.json",
   // The Kimi plugin manifest.
   "kimi.plugin.json",
+  "installer/",
 ];
 
 export const isShipped = (path) => SHIPPED.some((entry) => (entry.endsWith("/") ? path.startsWith(entry) : path === entry));
