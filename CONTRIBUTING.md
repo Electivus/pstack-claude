@@ -145,6 +145,7 @@ A shipped path is a file an installed copy carries or reads. `SHIPPED` in [`tool
 - `plugins/pstack/`, every file in it. Claude Code copies the directory whole into its plugin cache, vendored tests included, and the other runtimes load their skills, hooks, agents, and extensions from it.
 - `.claude-plugin/marketplace.json` and `.agents/plugins/marketplace.json`, the Claude Code and Codex marketplace catalogs.
 - `package.json`, the Pi and OpenCode package manifest, and `kimi.plugin.json`, the Kimi plugin manifest.
+- `installer/`, the checkout-based `open-pstack` installer.
 
 Everything else is repo-only and needs no release. That covers `tests/`, `tools/`, `docs/`, `.github/`, the root docs, `CHANGES.md`, `VERSION`, `bun.lock`, and `plugins/package.json` with its lockfile. A vendored test under `plugins/pstack/` is a shipped path, so a change there that users never see still takes a patch release. When you add a manifest outside `plugins/pstack/` that the generator stamps a version into, add it to `SHIPPED`. A test fails until you do.
 
@@ -157,6 +158,8 @@ bun tools/release.mjs --title "<title>" --body-file <file>
 The paragraph says what changed and why, as the entries in [`CHANGES.md`](CHANGES.md) do. The command raises the patch number, or the minor or major number with `--bump minor` or `--bump major`. It adds `## <version> - <title>` and the paragraph above the newest `CHANGES.md` entry, then runs the generator to stamp every manifest. Before it writes anything, it refuses an empty title or paragraph and a version that `CHANGES.md` already heads. Commit `VERSION`, `CHANGES.md`, and the manifests it lists with your change.
 
 If another release merges first, your branch conflicts in `VERSION` and `CHANGES.md`. Take main's version of both and run the command again. Run the full invariant script (including the behavioral leg) before merging.
+
+The `open-pstack` installer in `installer/` is versioned with the rest: the generator stamps `installer/package.json` from `VERSION`. Pushing the `vX.Y.Z` tag runs `.github/workflows/release-npm.yml`, which checks that the tag, `VERSION`, and the installer version agree, then publishes `open-pstack` to npm with provenance through trusted publishing. It skips a version npm already has. Trusted publishing is configured from the package's settings page, so the package must exist first: publish the first version by hand with `npm login` and `npm publish --access public` in `installer/`, then add this repository and `release-npm.yml` as the trusted publisher. A new trusted publisher expires unless it completes a publish within 2 days, so add it shortly before pushing the next tag. Run `npm pack --dry-run` in `installer/` to preview the tarball, which `prepack` fills with the plugin and licenses.
 
 ## Commit and PR style
 

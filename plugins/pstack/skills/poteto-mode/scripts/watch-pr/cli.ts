@@ -13,6 +13,7 @@ import {
   discoverStack,
   resolveContext,
 } from "./github.ts";
+import { CloudSessionReader, FallbackGitHubReader } from "./cloud-reader.ts";
 import {
   NO_CHECKS_CONFIRM_SECONDS,
   runQueued,
@@ -209,11 +210,12 @@ export interface CliRuntime {
 }
 function realRuntime(timeout: number): CliRuntime {
   const deadline = new WatchDeadline(timeout, () => performance.now() / 1_000);
+  const gh = new GhGitHubReader(deadline);
   return {
     deadline,
-    reader: advisoryReader(
-      new GhGitHubReader(deadline),
-      ghRequiredNames(deadline)
+    reader: new FallbackGitHubReader(
+      advisoryReader(gh, ghRequiredNames(deadline)),
+      new CloudSessionReader(deadline, gh)
     ),
     clock: {
       now: () => performance.now() / 1_000,
