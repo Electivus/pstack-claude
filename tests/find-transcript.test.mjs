@@ -1,9 +1,10 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, utimesSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 
+import { SessionManager } from "../plugins/node_modules/@earendil-works/pi-coding-agent/dist/core/session-manager.js";
 import { candidates, findTranscript, openingPrompt } from "../plugins/pstack/skills/reflect/scripts/find-transcript.mjs";
 import { removeDuring } from "./remove-during.mjs";
 
@@ -222,6 +223,137 @@ describe("find-transcript", () => {
     const pi = transcript(dir, "--work-repo--/s.jsonl", [piHeader, piMessage("u1", null, "user", "review issue 59 on Pi")], 200);
     expect(await findTranscript(dir, "on Pi")).toBe(pi);
     expect(await findTranscript(dir, "issue 59")).toBe(pi);
+  });
+
+  test.skipIf(noNode)("the CLI prefers the active Pi fork and lists only its branch's subagent transcripts", () => {
+    const dir = tempDir();
+    const workspace = join(dir, "workspace");
+    const sessions = join(dir, "custom-sessions");
+    mkdirSync(workspace);
+    const createSession = (sessionDir, id, prompt) => {
+      const session = SessionManager.create(workspace, sessionDir, { id });
+      session.appendMessage({ role: "user", content: prompt, timestamp: 1 });
+      session.appendMessage({ role: "assistant", content: [{ type: "text", text: "done" }], timestamp: 2 });
+      return session;
+    };
+    const parent = createSession(sessions, "parent", "ship the release");
+    const original = parent.getSessionFile();
+    const ownerDir = () => join(dir, "pstack", parent.getSessionId(), "agents");
+    const appendAgent = (sessionDir, sessionId) =>
+      parent.appendCustomEntry("pstack-agents", { status: "completed", agent: { sessionDir, sessionId } });
+    const child = (sessionDir, id, mtime) => {
+      const file = createSession(sessionDir, id, "synthetic child task").getSessionFile();
+      utimesSync(file, mtime, mtime);
+      return file;
+    };
+    const inherited = child(ownerDir(), "shared_agent", 20);
+    appendAgent(ownerDir(), "shared_agent");
+    const forkPoint = appendAgent(ownerDir(), "shared_agent");
+    child(ownerDir(), "only-parent", 30);
+    appendAgent(ownerDir(), "only-parent");
+    const fork = parent.createBranchedSession(forkPoint);
+    const current = child(ownerDir(), "only-fork", 10);
+    appendAgent(ownerDir(), "only-fork");
+    appendAgent(ownerDir(), "not-started");
+    appendAgent(join(dir, "pstack", "removed-owner", "agents"), "missing");
+    appendAgent(ownerDir(), { id: "invalid" });
+    const outside = join(dir, "unrelated", "agents");
+    const escaped = child(outside, "outside", 5);
+    appendAgent(outside, "outside");
+    const link = join(dir, "pstack", "linked-owner", "agents");
+    mkdirSync(dirname(link));
+    symlinkSync(outside, link, "dir");
+    appendAgent(link, "outside");
+    symlinkSync(escaped, join(ownerDir(), basename(escaped)));
+    appendAgent(ownerDir(), "outside");
+    mkdirSync(join(ownerDir(), basename(escaped).replace("_outside", "_not-a-file")));
+    appendAgent(ownerDir(), "not-a-file");
+    child(ownerDir(), "unrelated_only-fork", 40);
+    child(join(ownerDir(), "nested"), "nested-only", 50);
+    appendAgent(ownerDir(), "nested-only");
+    const abandonedPoint = appendAgent(ownerDir(), "only-fork");
+    child(ownerDir(), "abandoned", 60);
+    appendAgent(ownerDir(), "abandoned");
+    parent.branch(abandonedPoint);
+    const leaf = parent.appendCustomEntry("unrelated", {});
+    const forkOfFork = parent.createBranchedSession(leaf);
+    utimesSync(forkOfFork, 50, 50);
+    utimesSync(fork, 100, 100);
+    utimesSync(original, 200, 200);
+
+    const paths = (active) => {
+      const run = spawnSync("node", [script, sessions, "ship the release"], {
+        encoding: "utf8",
+        env: { ...process.env, PI_SESSION_FILE: active, PI_CODING_AGENT_DIR: dir },
+      });
+      expect(run.stderr).toBe("");
+      expect(run.status).toBe(0);
+      return run.stdout.trim().split("\n");
+    };
+    expect(paths(fork)).toEqual([fork, current, inherited]);
+    expect(paths(forkOfFork)).toEqual([forkOfFork, current, inherited]);
+    rmSync(original);
+    expect(paths(forkOfFork)).toEqual([forkOfFork, current]);
+  });
+
+  test.skipIf(noNode)("the CLI ignores active-session hints outside the workspace, for non-Pi files, or with a different opening", () => {
+    const dir = tempDir();
+    const sessions = join(dir, "sessions");
+    const prompt = "ship the release";
+    const pi = (folder, name, opening, time) =>
+      transcript(folder, name, [piHeader, piMessage("u1", null, "user", opening)], time);
+    const newest = pi(sessions, "pi.jsonl", prompt, 200);
+    pi(sessions, "same-name.jsonl", prompt, 100);
+    const outside = pi(join(dir, "outside"), "same-name.jsonl", prompt, 300);
+    const different = pi(sessions, "different.jsonl", "other prompt", 300);
+    const claude = transcript(sessions, "claude.jsonl", [meta, user(prompt)], 100);
+    for (const hint of [outside, different, claude]) {
+      const run = spawnSync("node", [script, "sessions", prompt], {
+        cwd: dir,
+        encoding: "utf8",
+        env: { ...process.env, PI_SESSION_FILE: hint, PI_CODING_AGENT_DIR: dir },
+      });
+      expect(run.stderr).toBe("");
+      expect(run.status).toBe(0);
+      expect(join(dir, run.stdout.trim())).toBe(newest);
+    }
+  });
+
+  test.skipIf(noNode)("only the active Pi file or the configured Pi sessions root can list Pi subagents", () => {
+    const dir = realpathSync(tempDir());
+    const agentDir = join(dir, ".pi", "agent");
+    const childName = "2026-10-01T00-00-00-000Z_child.jsonl";
+    transcript(join(agentDir, "pstack", "s-1", "agents"), childName, [piHeader], 100);
+    const unrelatedDir = join(agentDir, "pstack", "unrelated-session", "agents");
+    transcript(unrelatedDir, childName, [piHeader], 110);
+    const alias = join(dir, "agent-alias");
+    symlinkSync(agentDir, alias, "dir");
+    const sessionDir = join(alias, "pstack", "s-1", "agents");
+    const child = join(sessionDir, childName);
+    const records = (childDir) => [
+      piHeader,
+      piMessage("u1", null, "user", "ship the release"),
+      piEntry("c1", "u1", "custom", { customType: "pstack-agents", data: { agent: { sessionDir: childDir, sessionId: "child" } } }),
+      piEntry("c2", "c1", "custom", { customType: "pstack-agents", data: { agent: { sessionDir: unrelatedDir, sessionId: "child" } } }),
+    ];
+    const name = "2026-10-01T00-00-00-000Z_s-1.jsonl";
+    const genuine = transcript(join(agentDir, "sessions", "--workspace--"), name, records(sessionDir), 200);
+    const impostor = transcript(join(dir, "workspace"), name, records(sessionDir), 200);
+    const run = (file, configuredDir) => {
+      const result = spawnSync("node", [script, dirname(file), "ship the release"], {
+        encoding: "utf8",
+        cwd: dir,
+        env: { ...process.env, HOME: dir, USERPROFILE: dir, PI_SESSION_FILE: "", PI_CODING_AGENT_DIR: configuredDir },
+      });
+      expect(result.stderr).toBe("");
+      expect(result.status).toBe(0);
+      return result.stdout.trim().split("\n");
+    };
+    expect(run(impostor, agentDir)).toEqual([impostor]);
+    expect(run(genuine, agentDir)).toEqual([genuine, child]);
+    expect(run(genuine, "")).toEqual([genuine, child]);
+    transcript(dirname(genuine), name, records(join("agent-alias", "pstack", "s-1", "agents")), 200);
+    expect(run(genuine, "agent-alias")).toEqual([genuine, child]);
   });
 
   // Copilot's layout: <session-state>/<id>/events.jsonl, a session.start event,
