@@ -2,6 +2,10 @@
 
 This file is the release changelog, with one `## <version> - <title>` entry per release, newest first. The Cursor-to-Claude rewrite rules live in [`tools/substitutions.json`](tools/substitutions.json), and the [sync boundary](CONTRIBUTING.md#the-sync-boundary) in `CONTRIBUTING.md` defines how a change to upstream's skill content is declared.
 
+## 0.9.159 - Find Pi subagent transcripts on the active branch
+
+On Pi, `/reflect` finds the pstack subagents recorded on the active branch. When a fork and its source share an opening prompt, the finder prefers the active session even if the source was updated more recently. It includes inherited subagents whose owners it can verify from the fork's ancestry and leaves out work that happened only in the source session.
+
 ## 0.9.158 - Sync upstream 0.9.153
 
 This release merges [michael-denyer/pstack-claude 0.9.153](https://github.com/michael-denyer/pstack-claude/releases/tag/v0.9.153) into Electivus. `watch-pr` reports Actions startup failures and reads PR status over REST when Claude Code cloud sessions refuse GraphQL. The GraphQL reader still distinguishes advisory checks. The REST reader treats pending checks as required. Pi reads committed project model sheets and can run subagents in herdr-core terminals. OpenCode registers pstack's bundled agents, and `reflect` reads OpenCode sessions and writes skill copies to the right folders on Pi and Codex. The checkout-based `open-pstack` installer, including the Windows command shim fixes, installs the Electivus fork. The npm and Homebrew packages still install upstream.
